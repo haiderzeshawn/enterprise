@@ -1,0 +1,19 @@
+[Unit]
+Description=Uvicorn instance to serve {{ python_services[inventory_hostname].service_hostname }}
+After=network.target
+
+[Service]
+User={{ webserver_user }}
+Group={{ webserver_group }}
+WorkingDirectory={{ python_services[inventory_hostname].service_app_working_dir }}
+Environment="PATH={{ python_services[inventory_hostname].service_venv }}/bin"
+ExecStart={{ python_services[inventory_hostname].service_script_dir }}/run-service-{{ python_services[inventory_hostname].service_hostname }}.sh
+Restart=always
+RestartSec=5s
+KillMode=mixed
+TimeoutStopSec=10
+SyslogIdentifier={{ python_services[inventory_hostname].service_hostname }}
+
+[Install]
+WantedBy=multi-user.target
+

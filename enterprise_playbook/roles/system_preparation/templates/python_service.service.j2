@@ -1,0 +1,63 @@
+# templates/python_service.service.j2
+[Unit]
+Description={{ item.service_hostname | title }} FastAPI Application
+Documentation=https://fastapi.tiangolo.com/
+After=network.target postgresql.service redis.service
+Wants=network.target
+RequiresMountsFor=/var/www
+
+[Service]
+Type=notify
+User={{ webserver_user }}
+Group={{ webserver_group }}
+RuntimeDirectory={{ item.service_hostname }}
+RuntimeDirectoryMode=755
+WorkingDirectory={{ item.service_app_working_dir }}
+Environment=PATH={{ item.service_venv }}/bin
+Environment=PYTHONPATH={{ item.service_app_working_dir }}
+Environment=PYTHONUNBUFFERED=1
+
+# Production environment variables
+Environment=ENVIRONMENT=production
+Environment=LOG_LEVEL=info
+
+# Resource limits
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# Security settings
+#NoNewPrivileges=true
+#PrivateTmp=true
+#ProtectSystem=strict
+#ProtectHome=true
+#ReadWritePaths={{ item.service_app_working_dir }} /var/log /tmp
+
+# Service execution
+ExecStart={{ item.service_script_dir }}/run-service-{{ item.service_hostname }}.sh
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+
+# Graceful shutdown settings
+TimeoutStartSec=60
+TimeoutStopSec=45
+TimeoutReloadSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Health check (optional - requires systemd 246+)
+# WatchdogSec=30
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier={{ item.service_hostname }}
+
+[Install]
+WantedBy=multi-user.target
+

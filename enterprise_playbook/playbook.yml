@@ -1,0 +1,12 @@
+- name: System Preparation (Dynamic Auth Profile)
+  hosts: all
+  become: true      # ✅ must be here
+    #gather_facts: false
+  gather_facts: yes
+
+  vars_files:
+    - "{{ auth_profile | default('auth_profiles/sysadmin_auth.yml') }}"
+
+  roles:
+    - role: system_preparation
+      #- role: app_services

@@ -1,0 +1,47 @@
+---
+# roles/system_preparation/tasks/user_management/create_groups.yml
+- name: "Resolve primary group name for {{ user_name }}"
+  set_fact:
+    resolved_primary_group: "{{ user_name if (user_config.primary_group == 'AUTO' or user_config.primary_group == '{{ user_name }}') else user_config.primary_group | default(user_name) }}"
+  tags:
+    - groups
+    - primary_group
+
+- name: "Create primary group for user {{ user_name }}"
+  group:
+    name: "{{ resolved_primary_group }}"
+    state: present
+  tags:
+    - groups
+    - primary_group
+
+- name: "Create team default groups"
+  group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ current_team_inventory.default_groups | default([]) }}"
+  when: current_team_inventory.default_groups is defined
+  tags:
+    - groups
+    - team_default_groups
+
+- name: "Create team additional groups"
+  group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ current_team_inventory.additional_groups | default([]) }}"
+  when: current_team_inventory.additional_groups is defined
+  tags:
+    - groups
+    - team_additional_groups
+
+- name: "Create user-specific additional groups for {{ user_name }}"
+  group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ user_config.additional_groups | default([]) }}"
+  when: user_config.additional_groups is defined
+  tags:
+    - groups
+    - user_additional_groups
+

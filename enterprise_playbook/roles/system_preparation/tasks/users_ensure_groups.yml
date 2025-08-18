@@ -1,0 +1,77 @@
+---
+# Create default+additional team groups, plus per-user primary & extra groups.
+
+- name: Bail out early if no teams (safety)
+  meta: end_host
+  when: host_teams | length == 0
+  tags: [user_mgmt, groups]
+
+# ---- Team-level groups (default + additional) ----
+- name: Collect team default+additional groups union
+  set_fact:
+    _team_groups_union: >-
+      {{
+        (
+          host_teams
+          | map('extract', team_inventory_mapping) | list
+          | map(attribute='default_groups') | map('default', []) | list | flatten
+        )
+        +
+        (
+          host_teams
+          | map('extract', team_inventory_mapping) | list
+          | map(attribute='additional_groups') | map('default', []) | list | flatten
+        )
+        | unique
+      }}
+  tags: [user_mgmt, groups]
+
+- name: Ensure team groups exist
+  group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ _team_groups_union }}"
+  when: _team_groups_union | length > 0
+  tags: [user_mgmt, groups]
+
+# ---- Per-user groups (resolve primary + collect additional) ----
+- name: Init per-user group accumulators
+  set_fact:
+    _primary_groups: []
+    _additional_groups: []
+  tags: [user_mgmt, groups]
+
+- name: Accumulate resolved primary groups (AUTO -> username)
+  set_fact:
+    _primary_groups: >-
+      {{
+        _primary_groups + [
+          (
+            (item.value.primary_group | default('AUTO')) == 'AUTO'
+          ) | ternary(item.key, item.value.primary_group)
+        ]
+      }}
+  loop: "{{ host_user_items | default([]) }}"
+  when: item.value.enabled | default(false)
+  tags: [user_mgmt, groups]
+
+- name: Accumulate additional groups per user
+  set_fact:
+    _additional_groups: "{{ _additional_groups + (item.value.additional_groups | default([])) }}"
+  loop: "{{ host_user_items | default([]) }}"
+  when: item.value.enabled | default(false)
+  tags: [user_mgmt, groups]
+
+- name: Union of per-user groups
+  set_fact:
+    _per_user_groups_union: "{{ (_primary_groups + _additional_groups) | unique }}"
+  tags: [user_mgmt, groups]
+
+- name: Ensure per-user groups exist
+  group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ _per_user_groups_union }}"
+  when: _per_user_groups_union | length > 0
+  tags: [user_mgmt, groups]
+

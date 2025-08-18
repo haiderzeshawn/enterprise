@@ -1,0 +1,20 @@
+---
+- name: Ensure group 'vwdb-ldba' exists
+  group:
+    name: "vwdb-ldba"
+    state: present
+  tags:
+    - vwdb-ldba-sudoers
+    - system_preparation
+
+- name: Deploy sudoers template for 'vwdb-ldba'
+  template:
+    src: "vwdb-ldba.j2"
+    dest: "/etc/sudoers.d/vwdb-ldba"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  tags:
+    - vwdb-ldba-sudoers
+    - system_preparation

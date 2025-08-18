@@ -1,0 +1,89 @@
+# roles/system_preparation/tasks/tang_binding.yml
+
+- name: Copy Tang + GRUB scripts to remote host
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - { src: "roles/system_preparation/scripts/automated_tang_bind.sh", dest: "/tmp/automated_tang_bind.sh" }
+    - { src: "roles/system_preparation/scripts/automated_grub_network.sh", dest: "/tmp/automated_grub_network.sh" }
+  tags:
+    - tang_grub
+    - system_preparation
+
+- name: Execute Tang binding script
+  shell: /tmp/automated_tang_bind.sh
+  register: tang_script_output
+  args:
+    chdir: /tmp
+  async: 300
+  poll: 15
+  failed_when: tang_script_output.rc != 0
+  tags:
+    - tang_grub
+    - system_preparation
+
+- name: Debug Tang script output
+  debug:
+    var: tang_script_output.stdout_lines
+  tags:
+    - tang_grub
+    - system_preparation
+
+- name: Verify Tang binding succeeded
+  shell: |
+    clevis_luks_list_output=1
+    for dev in $(blkid -t TYPE=crypto_LUKS -o device); do
+      if clevis luks list -d "$dev" | grep -q tang; then
+        clevis_luks_list_output=0
+        break
+      fi
+    done
+    exit $clevis_luks_list_output
+  register: tang_verification
+  failed_when: tang_verification.rc != 0
+  tags:
+    - tang_grub
+    - system_preparation
+
+- name: Execute GRUB network configuration script
+  shell: /tmp/automated_grub_network.sh
+  register: grub_script_output
+  args:
+    chdir: /tmp
+  async: 120
+  poll: 10
+  failed_when: grub_script_output.rc != 0
+  tags:
+    - tang_grub
+    - system_preparation
+
+- name: Debug GRUB script output
+  debug:
+    var: grub_script_output.stdout_lines
+  tags:
+    - tang_grub
+    - system_preparation
+
+- name: Update initramfs
+  shell: update-initramfs -u
+  register: initramfs_result
+  failed_when: initramfs_result.rc != 0
+  tags:
+    - tang_grub
+    - system_preparation
+
+- name: Cleanup Tang and GRUB scripts
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/automated_tang_bind.sh
+    - /tmp/automated_grub_network.sh
+  tags:
+    - tang_grub
+    - system_preparation
+

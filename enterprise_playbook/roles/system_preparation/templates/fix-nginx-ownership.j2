@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Debugging
+exec > >(logger -t fix-ownership-web) 2>&1
+
+while true; do
+    inotifywait -r -e create -e moved_to \
+        --format '%w%f' \
+        {% for dir in dev_directories %}
+        {{ dir }} {% endfor %} | while read -r FILE
+    do
+        [ -e "$FILE" ] && chown {{ webserver_user }}:{{ webserver_user }} "$FILE"
+    done
+    sleep 1
+done
+

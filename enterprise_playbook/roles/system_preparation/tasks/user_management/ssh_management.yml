@@ -1,0 +1,156 @@
+---
+# roles/system_preparation/tasks/user_management/ssh_management.yml
+- name: "Resolve primary group for SSH management"
+  set_fact:
+    resolved_primary_group: "{{ user_name if (user_config.primary_group == 'AUTO' or user_config.primary_group == '{{ user_name }}') else user_config.primary_group | default(user_name) }}"
+  tags:
+    - ssh
+    - ssh_setup
+
+- name: "Check if user {{ user_name }} has SSH directory"
+  stat:
+    path: "/home/{{ user_name }}/.ssh"
+  register: ssh_dir_check
+  tags:
+    - ssh
+    - ssh_setup
+
+- name: "Create .ssh directory for {{ user_name }}"
+  file:
+    path: "/home/{{ user_name }}/.ssh"
+    state: directory
+    owner: "{{ user_name }}"
+    group: "{{ resolved_primary_group }}"
+    mode: '0700'
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+  tags:
+    - ssh
+    - ssh_setup
+
+- name: "Check if SSH key already exists for {{ user_name }}"
+  stat:
+    path: "/home/{{ user_name }}/.ssh/id_{{ ssh_config.key_type }}"
+  register: ssh_key_exists
+  when:
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+  tags:
+    - ssh
+    - ssh_keys
+    - check_keys
+
+- name: "Generate SSH key pair for {{ user_name }}"
+  openssh_keypair:
+    path: "/home/{{ user_name }}/.ssh/id_{{ ssh_config.key_type }}"
+    owner: "{{ user_name }}"
+    group: "{{ resolved_primary_group }}"
+    mode: '0600'
+    type: "{{ ssh_config.key_type }}"
+    size: "{{ ssh_config.key_size }}"
+    comment: "{{ user_config.full_name | default(user_name) }}@{{ inventory_hostname }}"
+  register: ssh_key_generated
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - user_config.create_ssh_keys | default(true)
+    - not ssh_key_exists.stat.exists
+  tags:
+    - ssh
+    - ssh_keys
+    - key_generation
+
+- name: "SSH key already exists for {{ user_name }}"
+  debug:
+    msg: "SSH key already exists for {{ user_name }}, skipping generation"
+  when:
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - user_config.create_ssh_keys | default(true)
+    - ssh_key_exists.stat.exists
+  tags:
+    - ssh
+    - ssh_keys
+    - existing_keys
+
+- name: "Copy public key to authorized_keys for {{ user_name }}"
+  copy:
+    src: "/home/{{ user_name }}/.ssh/id_{{ ssh_config.key_type }}.pub"
+    dest: "/home/{{ user_name }}/.ssh/authorized_keys"
+    owner: "{{ user_name }}"
+    group: "{{ resolved_primary_group }}"
+    mode: '0600'
+    remote_src: yes
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - user_config.create_ssh_keys | default(true)
+    - (ssh_key_generated is succeeded) or (ssh_key_exists.stat.exists)
+  tags:
+    - ssh
+    - ssh_keys
+    - authorized_keys
+
+- name: "Fetch private key for {{ user_name }} to control node"
+  fetch:
+    src: "/home/{{ user_name }}/.ssh/id_{{ ssh_config.key_type }}"
+    dest: "{{ control_node_paths.ssh_keys }}/{{ user_name }}_{{ ansible_default_ipv4.address }}.key"
+    flat: yes
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - user_config.create_ssh_keys | default(true)
+    - (ssh_key_generated is succeeded) or (ssh_key_exists.stat.exists)
+  tags:
+    - ssh
+    - ssh_keys
+    - key_distribution
+
+- name: "Fetch public key for {{ user_name }} to control node"
+  fetch:
+    src: "/home/{{ user_name }}/.ssh/id_{{ ssh_config.key_type }}.pub"
+    dest: "{{ control_node_paths.ssh_keys }}/{{ user_name }}_{{ ansible_default_ipv4.address }}.pub"
+    flat: yes
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - user_config.create_ssh_keys | default(true)
+    - (ssh_key_generated is succeeded) or (ssh_key_exists.stat.exists)
+  tags:
+    - ssh
+    - ssh_keys
+    - key_distribution
+
+- name: "Set proper permissions on fetched private key for {{ user_name }}"
+  file:
+    path: "{{ control_node_paths.ssh_keys }}/{{ user_name }}_{{ ansible_default_ipv4.address }}.key"
+    mode: '0600'
+  delegate_to: localhost
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - user_config.create_ssh_keys | default(true)
+    - (ssh_key_generated is succeeded) or (ssh_key_exists.stat.exists)
+  tags:
+    - ssh
+    - ssh_keys
+    - key_permissions
+
+- name: "Display SSH key status for {{ user_name }}"
+  debug:
+    msg:
+      - "SSH Key Status for {{ user_name }}:"
+      - "  - SSH Access: {{ user_config.ssh_access | default(true) }}"
+      - "  - Create SSH Keys: {{ user_config.create_ssh_keys | default(true) }}"
+      - "  - Key existed: {{ ssh_key_exists.stat.exists | default(false) }}"
+      - "  - Key generated: {{ ssh_key_generated is succeeded if ssh_key_generated is defined else false }}"
+      - "  - Private key location: {{ control_node_paths.ssh_keys }}/{{ user_name }}_{{ ansible_default_ipv4.address }}.key"
+  when:
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+  tags:
+    - ssh
+    - ssh_keys
+    - info
+

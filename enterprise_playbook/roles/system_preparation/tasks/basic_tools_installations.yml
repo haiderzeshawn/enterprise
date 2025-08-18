@@ -1,0 +1,109 @@
+- name: basic_tools_installations | system preparation | install essential packages safely
+  block:
+    - name: Ensure apt cache is updated
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install basic system tools (Debian)
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - rsyslog
+        - sngrep
+        - logrotate
+        - logwatch
+        - logcheck
+        - logtop
+        - goaccess
+        - fail2ban
+        - auditd
+        - audispd-plugins
+        - acct
+        - chkrootkit
+        - rkhunter
+        - lynis
+        - htop
+        - iotop
+        - iftop
+        - atop
+        - nmon
+        - glances
+        - bpytop
+        - dstat
+        - sysstat
+        - psmisc
+        - procps
+        - strace
+        - lsof
+        - fatrace
+        - inotify-tools
+        - lshw
+        - hwinfo
+        - dmidecode
+        - cpuid
+        - cpufrequtils
+        - inxi
+        - hardinfo
+        - neofetch
+        - smartmontools
+        - hdparm
+        - nvme-cli
+        - memtest86+
+        - virt-what
+        - open-vm-tools
+        - net-tools
+        - iproute2
+        - iputils-ping
+        - traceroute
+        - mtr
+        - dnsutils
+        - bind9-dnsutils
+        - nmap
+        - tcpdump
+        - wireshark
+        - tshark
+        - nethogs
+        - bmon
+        - iptraf-ng
+        - vnstat
+        - speedtest-cli
+        - netcat-openbsd
+        - curl
+        - wget
+        - httpie
+        - siege
+        - apache2-utils
+        - kmod
+        - pciutils
+        - usbutils
+        - bc
+        - tree
+        - mc
+        - finger
+        - ksh
+        - locate
+        - make
+        - perf-tools-unstable
+        - sysdig
+        - stress-ng
+        - monit
+        - cron
+        - ntpdate
+        - rsync
+        - vim
+        - perl
+        - libusb-1.0-0
+        - libusb-1.0-0-dev
+        - gparted
+      ignore_errors: yes
+      register: package_install_results
+
+    - name: Print failed packages (if any)
+      debug:
+        msg: "Some packages failed to install: {{ item.item }}"
+      loop: "{{ package_install_results.results | selectattr('failed', 'defined') | list }}"
+      when: package_install_results is defined
+  tags: [basic_tools_installations, system_preparation]
+

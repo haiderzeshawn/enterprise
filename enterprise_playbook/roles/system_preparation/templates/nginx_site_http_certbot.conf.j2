@@ -1,0 +1,18 @@
+# Temporary HTTP configuration for Certbot validation
+server {
+    listen 80;
+    server_name {{ item.service_host_url }};
+    
+    # Include ACME challenge
+    include /etc/nginx/snippets/acme-challenge.conf;
+    
+    # Proxy to application for other requests using upstream
+    location / {
+        proxy_pass http://{{ item.service_host_name }};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+

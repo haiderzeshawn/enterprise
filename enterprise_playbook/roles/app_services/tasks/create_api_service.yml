@@ -1,0 +1,27 @@
+- name: Create API systemd service file
+  template:
+    src: api.service.j2
+    dest: "/etc/systemd/system/{{ server.service_host_name }}.service"
+    mode: '0644'
+  when: inventory_hostname == server.ip
+  with_items: "{{ app_servers }}"
+  loop_control:
+    loop_var: server
+  tags:
+    - create_api_service
+    - dotnet_site_config
+
+- name: Reload and enable API systemd service
+  systemd:
+    daemon_reload: yes
+    name: "{{ server.service_host_name }}"
+    enabled: yes
+    state: started
+  when: inventory_hostname == server.ip
+  with_items: "{{ app_servers }}"
+  loop_control:
+    loop_var: server
+  tags:
+    - enable_api_service
+    - system_preparation
+

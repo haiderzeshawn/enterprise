@@ -1,0 +1,16 @@
+[Unit]
+Description=Auto-chown new files in /var/www to nginx
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /usr/local/bin/vw-scripts/fix-nginx-dnet-ownership-script.sh
+Restart=always
+RestartSec=5s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=fix-ownership
+
+[Install]
+WantedBy=multi-user.target
+

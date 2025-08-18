@@ -1,0 +1,49 @@
+---
+- name: Gather minimal facts for OS detection
+  setup:
+    gather_subset:
+      - '!all'
+      - 'min'
+  tags: [create_ansible_user, user_setup, system_preparation]
+
+- name: Create user {{ ansible_user_to_create }}
+  user:
+    name: "{{ ansible_user_to_create }}"
+    shell: /bin/bash
+    create_home: yes
+    state: present
+    groups: "{{ 'sudo' if ansible_facts['os_family'] == 'Debian' else 'wheel' }}"
+    append: yes
+  tags: [create_ansible_user, user_setup, system_preparation]
+    
+- name: Ensure sudoers file exists for {{ ansible_user_to_create }}
+  copy:
+    dest: "/etc/sudoers.d/{{ ansible_user_to_create }}"
+    content: "{{ ansible_user_to_create }} ALL=(ALL) NOPASSWD:ALL\n"
+    owner: root
+    group: root
+    mode: '0440'
+  tags: [create_ansible_user, user_setup, system_preparation]
+
+# ---- SSHD_CONFIG USER APPEND LOGIC ----
+
+- name: Check if sshd_config has AllowUsers and it's not commented
+  command: grep -E '^\s*AllowUsers' /etc/ssh/sshd_config
+  register: allowusers_line
+  ignore_errors: true
+  changed_when: false
+  tags: [create_ansible_user, user_setup, system_preparation]
+
+- name: Add {{ ansible_user_to_create }} to AllowUsers (if not already present)
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^AllowUsers'
+    line: "{{ allowusers_line.stdout }} {{ ansible_user_to_create }}"
+    state: present
+    backrefs: yes
+  when:
+    - allowusers_line.stdout is defined
+    - "'{{ ansible_user_to_create }}' not in allowusers_line.stdout"
+  notify: Restart sshd
+  tags: [create_ansible_user, user_setup, system_preparation]
+

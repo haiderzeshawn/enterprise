@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Production startup script for {{ item.service_hostname }}
+# File: {{ item.service_script_dir }}/run-service-{{ item.service_hostname }}.sh
+
+set -e  # Exit on any error
+
+# Configuration
+APP_DIR="{{ item.service_app_working_dir }}"
+VENV_DIR="{{ item.service_venv }}"
+PYTHON="$VENV_DIR/bin/python3"
+GUNICORN="$VENV_DIR/bin/gunicorn"
+APP_MODULE="{{ item.entry_point }}:{{ item.service_app }}"
+BIND="{{ item.service_listen_host }}:{{ item.service_port }}"
+WORKERS="{{ item.workers | default(4) }}"
+PROC_NAME="{{ item.service_hostname }}"
+
+# Environment
+export PYTHONPATH="$APP_DIR:$PYTHONPATH"
+export PYTHONUNBUFFERED=1
+
+# Change to app directory
+cd "$APP_DIR"
+
+# Verify gunicorn is installed and upgrade if needed
+if [ ! -f "$GUNICORN" ]; then
+    echo "Error: Gunicorn not found at $GUNICORN"
+    echo "Install with: $VENV_DIR/bin/pip install gunicorn"
+    exit 1
+fi
+
+# Upgrade gunicorn to latest version for better features
+echo "Upgrading gunicorn to latest version..."
+$VENV_DIR/bin/pip install --upgrade gunicorn uvicorn[standard]
+
+# Verify app module exists
+if ! $PYTHON -c "import {{ item.entry_point.split('.')[0] }}.{{ item.entry_point.split('.')[1] }}" 2>/dev/null; then
+    echo "Error: Cannot import {{ item.entry_point }} module"
+    exit 1
+fi
+
+echo "Starting {{ item.service_hostname }} with $WORKERS workers..."
+
+# Start Gunicorn with production settings
+exec "$GUNICORN" "$APP_MODULE" \
+    --bind "$BIND" \
+    --workers "$WORKERS" \
+    --worker-class {{ item.worker_class | default('uvicorn.workers.UvicornWorker') }} \
+    --worker-connections 1000 \
+    --timeout {{ item.timeout | default(30) }} \
+    --keep-alive {{ item.keepalive | default(5) }} \
+    --graceful-timeout 30 \
+    --max-requests {{ item.max_requests | default(1000) }} \
+    --max-requests-jitter {{ item.max_requests_jitter | default(50) }} \
+    --preload \
+    --name "$PROC_NAME" \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info \
+    --capture-output \
+    --enable-stdio-inheritance
+

@@ -1,0 +1,107 @@
+# Python package management - pip
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/pip, /usr/local/bin/pip
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/pip3, /usr/local/bin/pip3
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/pip3.*, /usr/local/bin/pip3.*
+
+# Python package management - poetry
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/poetry, /usr/local/bin/poetry, /home/*/.local/bin/poetry
+
+# Python package management - pipenv
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/pipenv, /usr/local/bin/pipenv, /home/*/.local/bin/pipenv
+
+# Python ASGI servers - uvicorn
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/uvicorn, /usr/local/bin/uvicorn, /home/*/.local/bin/uvicorn
+
+# Python WSGI servers - gunicorn
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/gunicorn, /usr/local/bin/gunicorn, /home/*/.local/bin/gunicorn
+
+# Python web frameworks - django admin
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/django-admin, /usr/local/bin/django-admin, /home/*/.local/bin/django-admin
+
+# Python web frameworks - flask
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/flask, /usr/local/bin/flask, /home/*/.local/bin/flask
+
+# Python web frameworks - fastapi
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/fastapi, /usr/local/bin/fastapi, /home/*/.local/bin/fastapi
+
+# Python virtual environment management
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/virtualenv, /usr/local/bin/virtualenv
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/python* -m venv, /usr/local/bin/python* -m venv
+
+# Python interpreters
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/python, /usr/local/bin/python
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/python3, /usr/local/bin/python3
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/python3.*, /usr/local/bin/python3.*
+
+# Python development tools - pytest
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/pytest, /usr/local/bin/pytest, /home/*/.local/bin/pytest
+
+# Python development tools - black (code formatter)
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/black, /usr/local/bin/black, /home/*/.local/bin/black
+
+# Python development tools - flake8 (linter)
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/flake8, /usr/local/bin/flake8, /home/*/.local/bin/flake8
+
+# Python development tools - mypy (type checker)
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/mypy, /usr/local/bin/mypy, /home/*/.local/bin/mypy
+
+# Python Jupyter
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/jupyter, /usr/local/bin/jupyter, /home/*/.local/bin/jupyter
+
+# Python package building tools
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/setuptools, /usr/local/bin/setuptools
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/wheel, /usr/local/bin/wheel
+
+# Python task runners - celery
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/celery, /usr/local/bin/celery, /home/*/.local/bin/celery
+
+# Process management for Python apps
+%vwdev-lpyt ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl, /usr/local/bin/supervisorctl
+
+# File operations - Rsync
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/rsync * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/rsync * /var/www/engageapp/* *
+
+# File operations - rm (Remove files)
+%vwdev-lpyt ALL= NOPASSWD: /bin/rm -rf /var/www/engageapp/*, /bin/rm -f /var/www/engageapp/*, /bin/rm -r /var/www/engageapp/*
+
+# File operations - chmod/chown (Change file permissions and ownership)
+%vwdev-lpyt ALL= NOPASSWD: /bin/chmod * /var/www/engageapp/*, /bin/chmod -R * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /bin/chown * /var/www/engageapp/*, /bin/chown -R * /var/www/engageapp/*
+
+# Archive operations - unzip / zip
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/unzip * -d /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/zip -r * /var/www/engageapp/*
+
+# Archive operations - tar
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/tar -xzf * -C /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/tar -czf * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/tar -xf * -C /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/tar -cf * /var/www/engageapp/*
+
+# Directory operations - mkdir
+%vwdev-lpyt ALL= NOPASSWD: /bin/mkdir -p /var/www/engageapp/*
+
+# Text editors
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/vim /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/vi /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/nano /var/www/engageapp/*
+
+# File operations - touch
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/touch /var/www/engageapp/*
+
+# File operations - cp/mv/scp
+%vwdev-lpyt ALL= NOPASSWD: /bin/cp * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/cp * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /bin/mv * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/mv * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/scp * /var/www/engageapp/*
+
+# Version control - Git
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/git * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/git -C /var/www/engageapp/* *
+
+# PHP package management - Composer
+%vwdev-lpyt ALL= NOPASSWD: /usr/bin/composer * /var/www/engageapp/*
+%vwdev-lpyt ALL= NOPASSWD: /usr/local/bin/composer * /var/www/engageapp/*
+

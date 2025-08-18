@@ -1,0 +1,45 @@
+- name: Ensure vw-scripts directory exists
+  file:
+    path: /usr/local/bin/vw-scripts/
+    state: directory
+    mode: '0755'
+  tags: [script_directory, ownership_script_setup, system_preparation]
+
+- name: Deploy ownership fix script for MySQL
+  template:
+    src: fix_mysql_ownership_script.j2
+    dest: /usr/local/bin/vw-scripts/fix-mysql-ownership-script.sh
+    owner: "{{ fix_services_user }}"
+    group: "{{ fix_services_user }}"
+    mode: '0755'
+  tags: [fix_mysql_ownership, mysql_ownership_script_setup, system_preparation]
+
+- name: Deploy ownership fix script for PostgreSQL
+  template:
+    src: fix_postgres_ownership_script.j2
+    dest: /usr/local/bin/vw-scripts/fix-postgres-ownership-script.sh
+    owner: "{{ fix_services_user }}"
+    group: "{{ fix_services_user }}"
+    mode: '0755'
+  tags: [fix_postgres_ownership, postgres_ownership_script_setup, system_preparation]
+
+#******************** Nginx - /var/www/engageapp *********************#
+
+- name: Deploy ownership fix script for Nginx vwdev-ldnet
+  template:
+    src: fix_nginx_dnet_ownership_script.j2
+    dest: /usr/local/bin/vw-scripts/fix-nginx-dnet-ownership-script.sh
+    owner: "{{ fix_services_user }}"
+    group: "{{ fix_services_user }}"
+    mode: '0755'
+  tags: [fix_nginx_dnet_ownership, nginx_dnet_ownership_script_setup, system_preparation]
+
+- name: Deploy ownership fix script for Nginx vwdev-lpyt
+  template:
+    src: fix_nginx_pyt_ownership_script.j2
+    dest: /usr/local/bin/vw-scripts/fix-nginx-pyt-ownership-script.sh
+    owner: "{{ fix_services_user }}"
+    group: "{{ fix_services_user }}"
+    mode: '0755'
+  tags: [fix_nginx_pyt_ownership, nginx_pyt_ownership_script_setup, system_preparation]
+

@@ -1,0 +1,103 @@
+---
+# roles/system_preparation/tasks/user_management/process_user.yml
+- name: "Process user {{ user_name }}"
+  debug:
+    msg:
+      - "Processing user: {{ user_name }}"
+      - "User enabled: {{ user_config.enabled | default(true) }}"
+      - "Full name: {{ user_config.full_name | default('N/A') }}"
+      - "Role: {{ user_config.role | default('N/A') }}"
+  tags:
+    - users
+    - process_user
+
+- name: "Skip disabled user {{ user_name }}"
+  debug:
+    msg: "Skipping disabled user: {{ user_name }}"
+  when: not (user_config.enabled | default(true))
+  tags:
+    - users
+    - skip
+
+- name: "Check if user {{ user_name }} already exists"
+  getent:
+    database: passwd
+    key: "{{ user_name }}"
+  register: user_exists
+  failed_when: false
+  tags:
+    - users
+    - check_user
+
+- name: "User {{ user_name }} already exists - will only manage SSH keys"
+  debug:
+    msg: 
+      - "User {{ user_name }} already exists"
+      - "Will skip user creation and only manage SSH keys if needed"
+  when: 
+    - user_config.enabled | default(true)
+    - user_exists.found
+  tags:
+    - users
+    - existing_user
+
+- block:
+    - name: "Create groups for {{ user_name }}"
+      include_tasks: user_management/create_groups.yml
+      when: not user_exists.found
+      tags:
+        - groups
+        - create_groups
+    
+    - name: "Create user {{ user_name }}"
+      include_tasks: user_management/create_user.yml
+      when: not user_exists.found
+      tags:
+        - users
+        - create_user
+    
+    - name: "Manage SSH for {{ user_name }}"
+      include_tasks: user_management/ssh_management.yml
+      when: user_config.ssh_access | default(true)
+      tags:
+        - ssh
+        - ssh_keys
+        - ssh_access
+    
+    - name: "Manage sshd configuration for {{ user_name }}"
+      include_tasks: user_management/sshd_config.yml
+      when: user_config.ssh_access | default(true)
+      tags:
+        - ssh_config
+        - sshd
+        - access_control
+    
+    - name: "User {{ user_name }} processing completed successfully"
+      debug:
+        msg:
+          - "✓ User {{ user_name }} {{ 'updated' if user_exists.found else 'created' }} successfully"
+          - "✓ Primary group: {{ resolved_primary_group | default(user_name) }}"
+          - "✓ Team groups: {{ current_team_inventory.default_groups | default([]) + current_team_inventory.additional_groups | default([]) }}"
+          - "✓ Additional groups: {{ user_config.additional_groups | default([]) }}"
+          - "✓ SSH access: {{ user_config.ssh_access | default(true) }}"
+          - "✓ SSH keys: {{ user_config.create_ssh_keys | default(true) }}"
+      tags:
+        - users
+        - success
+
+  rescue:
+    - name: "User {{ user_name }} processing failed"
+      debug:
+        msg:
+          - "✗ Failed to process user {{ user_name }}"
+          - "Error: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      failed_when: false
+      tags:
+        - users
+        - error
+
+  when: user_config.enabled | default(true)
+  tags:
+    - users
+    - process_user
+

@@ -1,0 +1,75 @@
+---
+- name: Ensure required packages are installed
+  package:
+    name:
+      - snoopy
+      - inotify-tools
+      - auditd
+      - audispd-plugins
+      - rsyslog
+    state: present
+  tags:
+    - snoopy_auditd_logging_monitoring
+    - system_preparation
+
+- name: Enable and start auditd
+  service:
+    name: auditd
+    enabled: yes
+    state: started
+  tags:
+    - snoopy_auditd_logging_monitoring
+    - system_preparation
+
+- name: Ensure rsyslog is running and enabled
+  service:
+    name: rsyslog
+    enabled: yes
+    state: started
+  tags:
+    - snoopy_auditd_logging_monitoring
+    - system_preparation
+
+- name: Create rsyslog config for snoopy
+  template:
+    src: 30-snoopy.conf.j2
+    dest: /etc/rsyslog.d/30-snoopy.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart rsyslog
+  tags:
+    - snoopy_auditd_logging_monitoring
+    - system_preparation
+
+- name: Ensure snoopy log file exists
+  file:
+    path: /var/log/snoopy.log
+    state: touch
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - snoopy_auditd_logging_monitoring
+    - system_preparation
+
+- name: Deploy audit rules file
+  template:
+    src: 99-complete.rules.j2
+    dest: /etc/audit/rules.d/99-complete.rules
+    owner: root
+    group: root
+    mode: '0640'
+  notify: Reload audit rules
+  tags:
+    - snoopy_auditd_logging_monitoring
+    - system_preparation
+
+- name: Apply audit rules
+  #  command: augenrules --load
+  command: /usr/sbin/augenrules --load
+  notify: Restart auditd
+  tags:
+    - snoopy_auditd_logging_monitoring
+    - system_preparation
+

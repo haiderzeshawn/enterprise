@@ -1,0 +1,75 @@
+---
+# Figure out which teams apply to THIS host, without using 'intersect'
+
+- name: Show host inventory groups (debug once)
+  debug:
+    var: group_names
+  tags: [user_mgmt, resolve_scope]
+
+- name: Init host_teams
+  set_fact:
+    host_teams: []
+  tags: [user_mgmt, resolve_scope]
+
+# Include a team if:
+#  - 'all' is in its inventory_groups, OR
+#  - any of its inventory_groups is present in this host's group_names
+- name: Add teams mapped to this host
+  set_fact:
+    host_teams: "{{ host_teams + [item.key] }}"
+  loop: "{{ team_inventory_mapping | dict2items }}"
+  when: >
+    ('all' in (item.value.inventory_groups | default([])))
+    or
+    (
+      (item.value.inventory_groups | default([]))
+      | select('in', group_names | default([])) | list | length > 0
+    )
+  tags: [user_mgmt, resolve_scope]
+
+# Keep only teams that are enabled under team_users
+- name: Keep only enabled teams
+  set_fact:
+    host_teams: "{{ host_teams | select('in', enabled_teams) | list }}"
+  vars:
+    enabled_teams: >-
+      {{
+        team_users | dict2items
+        | selectattr('value.enabled','defined')
+        | selectattr('value.enabled')
+        | map(attribute='key') | list
+      }}
+  tags: [user_mgmt, resolve_scope]
+
+# Optional narrowing from CLI:  -e 'restrict_teams=["vwdev-ldnet"]'
+- name: Filter to restrict_teams if provided
+  set_fact:
+    host_teams: "{{ host_teams | select('in', restrict_teams | default([])) | list }}"
+  when: restrict_teams is defined
+  tags: [user_mgmt, resolve_scope]
+
+- name: Fail if no active teams mapped for this host
+  fail:
+    msg: "No active teams mapped for host {{ inventory_hostname }} (groups={{ group_names }}). Check team_inventory_mapping/team_users."
+  when: host_teams | length == 0
+  tags: [user_mgmt, resolve_scope]
+
+# Build flattened items: {key: username, value: user_spec, team: team}
+- name: Compile host_user_items from active teams
+  set_fact:
+    host_user_items: "{{ (host_user_items | default([])) + ((team_users[t].users | default({})) | dict2items | map('combine', {'team': t}) | list) }}"
+  loop: "{{ host_teams }}"
+  loop_control: { loop_var: t }
+  when: team_users[t] is defined
+  tags: [user_mgmt, resolve_scope]
+
+- name: Debug resolved host_teams
+  debug:
+    var: host_teams
+  tags: [user_mgmt, resolve_scope]
+- name: Sanity — show built host_user_items (team::user)
+  debug:
+    msg: "{{ item.team }}::{{ item.key }}"
+  loop: "{{ host_user_items | default([]) }}"
+  tags: [user_mgmt, resolve_scope]
+

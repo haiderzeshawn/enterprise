@@ -1,0 +1,605 @@
+---
+# Python Services Dynamic Deployment Playbook
+
+- name: Install Python3, pip, and venv on Debian/Ubuntu
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+      - build-essential
+      - libssl-dev
+      - libffi-dev
+      - python3-dev
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+  tags: 
+    - install_python_packages
+    - python_env_setup
+    - system_preparation
+
+- name: Install Python3, pip, and venv on RedHat/CentOS
+  yum:
+    name:
+      - python3
+      - python3-pip
+      - python3-virtualenv
+      - gcc
+      - openssl-devel
+      - libffi-devel
+      - python3-devel
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags: 
+    - install_python_packages
+    - python_env_setup
+    - system_preparation
+
+- name: Create base directories for Python services
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop:
+    - "{{ deployment_base_dir }}"
+    - "{{ service_script_base_dir }}"
+  tags: 
+    - ensure_directories
+    - python_service_setup
+    - python_env_setup
+    - system_preparation
+
+- name: Debug - Show current host and Python services
+  debug:
+    msg: "Host: {{ inventory_hostname }}, Python Services: {{ python_services[inventory_hostname] | default('No services found') }}"
+  tags:
+    - debug
+    - python_service_setup
+
+- name: Create application directories for Python services
+  file:
+    path: "{{ item.service_app_working_dir }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags: 
+    - ensure_directories
+    - python_service_setup
+    - python_env_setup
+    - system_preparation
+
+- name: Create service-specific script directories
+  file:
+    path: "{{ item.service_script_dir }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags: 
+    - ensure_directories
+    - python_service_setup
+    - python_env_setup
+    - system_preparation
+
+- name: Create virtual environment directories
+  file:
+    path: "{{ item.service_venv }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags: 
+    - ensure_directories
+    - python_service_setup
+    - python_env_setup
+
+- name: Deploy Python service runner script
+  template:
+    src: run-service-python.sh.j2
+    dest: "{{ item.service_script_dir }}/run-service-{{ item.service_hostname }}.sh"
+    mode: '0755'
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags: 
+    - deploy_service_script
+    - python_service_setup
+    - python_env_setup
+
+- name: Deploy Systemd service file for Python services
+  template:
+    src: python_service.service.j2
+    dest: "/etc/systemd/system/{{ item.service_hostname }}.service"
+    mode: '0644'
+    owner: root
+    group: root
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags: 
+    - deploy_systemd
+    - python_service_setup
+    - python_env_setup
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  tags: 
+    - systemd
+    - python_service_setup
+
+- name: Enable and start Python services
+  systemd:
+    name: "{{ item.service_hostname }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  ignore_errors: yes
+  tags: 
+    - start_systemd
+    - python_service_setup
+    - python_env_setup
+
+#######################################
+# SSL CONFIGURATION - DYNAMIC
+#######################################
+
+- name: Debug - SSL configuration for each Python service
+  debug:
+    msg: 
+      - "Service: {{ item.service_hostname }}"
+      - "SSL Certbot: {{ item.ssl_certbot | default(false) }}"
+      - "SSL Public CA: {{ item.ssl_public_ca | default(false) }}"
+      - "SSL Self-signed: {{ item.ssl_self_signed | default(false) }}"
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags:
+    - ssl
+    - debug
+    - python_service_setup
+
+# CERTBOT SSL CONFIGURATION
+- name: Install Certbot for Python services (when ssl_certbot is true)
+  apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: yes
+  when: python_services[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - python_service_setup
+
+- name: Create ACME challenge snippet for Python services
+  copy:
+    content: |
+      # ACME Challenge location
+      location ^~ /.well-known/acme-challenge/ {
+          root /var/www/html;
+          try_files $uri =404;
+      }
+    dest: /etc/nginx/snippets/acme-challenge.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: python_services[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - python_service_setup
+
+- name: Create web root for ACME challenges (Python services)
+  file:
+    path: /var/www/html/.well-known/acme-challenge
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+    recurse: yes
+  when: python_services[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - python_service_setup
+
+# Create temporary HTTP configurations for Certbot validation
+- name: Create temporary HTTP site configurations for Certbot (Python)
+  template:
+    src: python_nginx_site_http_certbot.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: 
+    - python_services[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - ssl
+    - certbot
+    - nginx_config
+    - python_service_setup
+
+# Enable HTTP sites for Certbot validation
+- name: Enable HTTP sites for Certbot validation (Python)
+  file:
+    src: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.service_host_url }}.conf"
+    state: link
+    force: yes
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: 
+    - python_services[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - ssl
+    - certbot
+    - nginx_config
+    - python_service_setup
+
+- name: Test and reload Nginx for Certbot validation (Python)
+  shell: |
+    nginx -t && systemctl reload nginx
+  when: python_services[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - nginx_config
+    - python_service_setup
+
+# Generate Certbot certificates for Python services
+- name: Generate Certbot SSL certificates (Python)
+  shell: |
+    certbot --nginx \
+      -d {{ item.service_host_url }} \
+      --email {{ ssl_email }} \
+      --agree-tos \
+      --non-interactive \
+      --redirect
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: 
+    - python_services[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - ssl
+    - certbot
+    - python_service_setup
+
+# SELF-SIGNED SSL CONFIGURATION
+- name: Create SSL directories for self-signed certificates (Python)
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/pki/tls/certs
+    - /etc/pki/tls/private
+  when: python_services[inventory_hostname] | selectattr('ssl_self_signed', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - self-signed
+    - python_service_setup
+
+- name: Generate self-signed wildcard SSL certificates (Python)
+  shell: |
+    openssl req -x509 -nodes -days 365 -newkey rsa:4096 \
+    -keyout /etc/pki/tls/private/star.{{ first_level_domains.parent_domain1 }}.key \
+    -out /etc/pki/tls/certs/star.{{ first_level_domains.parent_domain1 }}.pem \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=*.{{ first_level_domains.parent_domain1 }}"
+  args:
+    creates: "/etc/pki/tls/certs/star.{{ first_level_domains.parent_domain1 }}.pem"
+  when: python_services[inventory_hostname] | selectattr('ssl_self_signed', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - self-signed
+    - python_service_setup
+
+# PUBLIC CA SSL CONFIGURATION
+- name: Create SSL directories for public CA certificates (Python)
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/pki/tls/certs
+    - /etc/pki/tls/private
+  when: python_services[inventory_hostname] | selectattr('ssl_public_ca', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - public-ca
+    - python_service_setup
+
+- name: Copy public CA wildcard SSL certificate (Python)
+  copy:
+    src: "ssl/star.{{ first_level_domains.parent_domain1 }}.crt"
+    dest: "/etc/pki/tls/certs/star.{{ first_level_domains.parent_domain1 }}.crt"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  when: python_services[inventory_hostname] | selectattr('ssl_public_ca', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - public-ca
+    - python_service_setup
+
+- name: Copy public CA wildcard SSL private key (Python)
+  copy:
+    src: "ssl/star.{{ first_level_domains.parent_domain1 }}.key"
+    dest: "/etc/pki/tls/private/star.{{ first_level_domains.parent_domain1 }}.key"
+    owner: root
+    group: root
+    mode: '0600'
+    backup: yes
+  when: python_services[inventory_hostname] | selectattr('ssl_public_ca', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - public-ca
+    - python_service_setup
+
+- name: Copy public CA wildcard SSL CA bundle (Python)
+  copy:
+    src: "ssl/star.{{ first_level_domains.parent_domain1 }}.ca-bundle.pem"
+    dest: "/etc/pki/tls/certs/star.{{ first_level_domains.parent_domain1 }}.ca-bundle.pem"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  when: python_services[inventory_hostname] | selectattr('ssl_public_ca', 'equalto', true) | list | length > 0
+  ignore_errors: yes  # CA bundle might not always be present
+  tags:
+    - ssl
+    - public-ca
+    - python_service_setup
+
+#######################################
+# NGINX CONFIGURATION - PYTHON SERVICES
+#######################################
+
+- name: Create Nginx configuration directories (Python)
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/nginx/snippets
+    - /etc/nginx/conf.d
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+  tags:
+    - nginx_config
+    - nginx_dirs
+    - python_service_setup
+
+
+- name: Create main Nginx configuration from template
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  tags:
+    - nginx_config
+    - nginx_dirs
+    - python_service_setup
+
+- name: Create Nginx snippets for Python services
+  copy:
+    content: |
+      {{ item.content }}
+    dest: "/etc/nginx/snippets/{{ item.name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - name: restrict-sensitive.conf
+      content: |
+        # Block access to hidden files and backup files
+        location ~ /\.(?!well-known).* {
+            deny all;
+        }
+        
+        # Deny access to config/source/log files
+        location ~* /(README|readme|LICENSE|license|.*\.conf|.*\.log|.*\.bak)$ {
+            deny all;
+        }
+        
+        # Prevent directory listing
+        autoindex off;
+    
+    - name: ssl-strong.conf
+      content: |
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+        ssl_prefer_server_ciphers on;
+        ssl_session_timeout 1d;
+        ssl_session_cache shared:SSL:10m;
+        #ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    
+    - name: security-headers.conf
+      content: |
+        add_header X-Content-Type-Options nosniff;
+        add_header X-Frame-Options DENY;
+        add_header X-XSS-Protection "1; mode=block";
+        add_header Referrer-Policy strict-origin-when-cross-origin;
+        add_header Permissions-Policy "geolocation=(), microphone=()";
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+        add_header Content-Security-Policy "default-src 'none'; frame-ancestors 'none'; base-uri 'none';" always;
+  tags:
+    - nginx_config
+    - nginx_snippets
+    - python_service_setup
+
+- name: Create upstream configuration for each Python service
+  copy:
+    content: |
+      upstream {{ item.service_hostname }} {
+          # Round robin load balancing (default)
+          keepalive 64;
+          keepalive_requests 1000;
+          keepalive_timeout 30s;
+
+          # Backend servers with optimized settings
+          server {{ item.primary_backend_server }}:{{ item.service_port }} max_fails=2 fail_timeout=10s;
+          #server {{ item.secondary_backend_server }}:{{ item.service_port }} max_fails=2 fail_timeout=10s;
+      }
+    dest: "/etc/nginx/conf.d/{{ item.service_hostname }}-upstream.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags:
+    - nginx_config
+    - nginx_upstream
+    - python_service_setup
+
+# Create final SSL site configurations based on SSL type
+- name: Create Certbot SSL site configurations (Python)
+  template:
+    src: python_nginx_site_ssl_certbot.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: 
+    - python_services[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - nginx_config
+    - nginx_sites
+    - ssl_certbot
+    - python_service_setup
+
+- name: Create self-signed SSL site configurations (Python)
+  template:
+    src: python_nginx_site_ssl_self_signed.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: 
+    - python_services[inventory_hostname] is defined
+    - item.ssl_self_signed | default(false)
+  tags:
+    - nginx_config
+    - nginx_sites
+    - ssl_self_signed
+    - python_service_setup
+
+- name: Create public CA SSL site configurations (Python)
+  template:
+    src: python_nginx_site_ssl_public_ca.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: 
+    - python_services[inventory_hostname] is defined
+    - item.ssl_public_ca | default(false)
+  tags:
+    - nginx_config
+    - nginx_sites
+    - ssl_public_ca
+    - python_service_setup
+
+- name: Enable Nginx sites by creating symlinks (Python)
+  file:
+    src: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.service_host_url }}.conf"
+    state: link
+    force: yes
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  tags:
+    - nginx_config
+    - nginx_enable_sites
+    - python_service_setup
+
+- name: Test Nginx configuration syntax (Python)
+  command: nginx -t
+  register: nginx_test_result
+  changed_when: false
+  failed_when: nginx_test_result.rc != 0
+  tags:
+    - nginx_config
+    - nginx_test
+    - python_service_setup
+
+- name: Reload Nginx (Python)
+  systemd:
+    name: nginx
+    state: reloaded
+  when: nginx_test_result.rc == 0
+  tags:
+    - nginx_config
+    - nginx_reload
+    - python_service_setup
+
+# Add self-signed certificates to system trust store for Python services
+- name: Manual fix - Add self-signed wildcard certificate to system trust store (Python)
+  shell: |
+    # Copy certificate from the certificate file directly
+    cp /etc/pki/tls/certs/star.{{ first_level_domains.parent_domain1 }}.pem /usr/local/share/ca-certificates/star.{{ first_level_domains.parent_domain1 }}.crt
+    
+    # Update CA certificates
+    update-ca-certificates
+    
+    echo "Self-signed wildcard certificate for *.{{ first_level_domains.parent_domain1 }} added to system trust store"
+  when: python_services[inventory_hostname] | selectattr('ssl_self_signed', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - self-signed
+    - trust-store-manual
+    - python_service_setup
+
+- name: Test Python service SSL connectivity
+  shell: |
+    curl -I https://{{ item.service_host_url }} --max-time 10
+  loop: "{{ python_services[inventory_hostname] | default([]) }}"
+  when: python_services[inventory_hostname] is defined
+  register: python_ssl_test_result
+  ignore_errors: yes
+  tags:
+    - ssl
+    - ssl_test
+    - python_service_setup
+
+- name: Display Python SSL test results
+  debug:
+    msg: 
+      - "Service: {{ item.item.service_host_url }}"
+      - "Result: {{ 'SUCCESS' if item.rc == 0 else 'FAILED' }}"
+      - "Output: {{ item.stdout if item.rc == 0 else item.stderr }}"
+  loop: "{{ python_ssl_test_result.results | default([]) }}"
+  when: item.item is defined
+  tags:
+    - ssl
+    - ssl_test
+    - python_service_setup
+

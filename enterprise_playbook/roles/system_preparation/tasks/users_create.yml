@@ -1,0 +1,126 @@
+---
+# Toggle verbose debug for this role with: -e user_mgmt_debug=true
+- name: Ensure base creds dirs exist on control node
+  delegate_to: localhost
+  run_once: true
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0700'
+  loop:
+    - "{{ control_node_paths.user_creds }}"
+    - "{{ control_node_paths.ssh_keys }}"
+  tags: [user_mgmt, create_users]
+
+- name: Ensure per-team dirs on control node
+  delegate_to: localhost
+  file:
+    path: "{{ control_node_paths.user_creds }}/{{ team }}"
+    state: directory
+    mode: '0700'
+  loop: "{{ host_teams }}"
+  loop_control: { loop_var: team }
+  tags: [user_mgmt, create_users]
+
+# Build a clean list of enabled users, preserving team
+- name: Init enabled users list
+  set_fact:
+    _enabled_users: []
+  tags: [user_mgmt, create_users]
+
+- name: Accumulate enabled users per team
+  set_fact:
+    _enabled_users: >-
+      {{
+        _enabled_users
+        + (
+            (team_users[team].users | default({}))
+            | dict2items
+            | selectattr('value.enabled','defined')
+            | selectattr('value.enabled')
+            | map('combine', {'team': team})
+            | list
+          )
+      }}
+  loop: "{{ host_teams }}"
+  loop_control: { loop_var: team }
+  when: team_users[team] is defined
+  tags: [user_mgmt, create_users]
+
+# Optional visibility
+- name: Debug enabled users (team::username)
+  debug:
+    msg: "{{ item.team }}::{{ item.key }}"
+  loop: "{{ _enabled_users }}"
+  when: user_mgmt_debug | default(false)
+  tags: [user_mgmt, create_users]
+
+# Validate user item structure
+- name: Validate enabled user item structure
+  assert:
+    that:
+      - item is mapping
+      - item.key is string
+      - item.value is mapping
+      - item.team is string
+  loop: "{{ _enabled_users }}"
+  when: user_mgmt_debug | default(false)
+  tags: [user_mgmt, create_users]
+
+# Create/Update users safely
+- name: Create/Update users
+  vars:
+    _defaults: "{{ default_user_settings }}"
+    _spec: "{{ _defaults | combine(item.value, recursive=True) }}"
+    _pg_is_auto: "{{ (_spec.primary_group | default('AUTO')) == 'AUTO' }}"
+    _team_defaults: "{{ team_inventory_mapping[item.team].default_groups | default([]) }}"
+    _team_additional: "{{ team_inventory_mapping[item.team].additional_groups | default([]) }}"
+    _user_additional: "{{ _spec.additional_groups | default([]) }}"
+    _all_groups: "{{ (_team_defaults + _team_additional + _user_additional) | unique }}"
+    _password_hash: >-
+      {{
+        _spec.password_hash
+          | default(
+              (_spec.generate_password | bool)
+              | ternary(
+                  (lookup('password',
+                    control_node_paths.user_creds ~ '/' ~ item.team ~ '/' ~ item.key ~ '.pass length=20 chars=ascii_letters,digits'
+                   ) | password_hash('sha512')),
+                  (_spec.password | default('') | length > 0)
+                  | ternary(_spec.password | password_hash('sha512'), '!')
+              )
+            )
+      }}
+    _comment: "{{ _spec.comment | default(_spec.full_name | default(item.key)) }}"
+  user:
+    name: "{{ item.key }}"
+    comment: "{{ _comment }}"
+    shell: "{{ _spec.shell }}"
+    create_home: "{{ _spec.create_home }}"
+    # IMPORTANT:
+    # If primary_group is AUTO, omit 'group' so the OS creates the default user group.
+    group: "{{ (not _pg_is_auto) | ternary(_spec.primary_group, omit) }}"
+    groups: "{{ _all_groups | join(',') }}"
+    append: true
+    password: "{{ _password_hash }}"
+    state: present
+  loop: "{{ _enabled_users }}"
+  loop_control:
+    label: "{{ item.key }} (team={{ item.team }})"
+  no_log: "{{ not (user_mgmt_debug | default(false)) }}"
+  tags: [user_mgmt, create_users]
+
+- name: Force password change on next login (if requested)
+  command: "chage -d 0 {{ item.key }}"
+  changed_when: true
+  loop: >-
+    {{
+      _enabled_users
+      | selectattr('value.password_expire','defined')
+      | selectattr('value.password_expire')
+      | list
+    }}
+  loop_control:
+    label: "{{ item.key }}"
+  tags: [user_mgmt, create_users]
+

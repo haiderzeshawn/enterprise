@@ -1,0 +1,16 @@
+[Unit]
+Description=Auto-chown new files in dev_directories to {{ webserver_user }}
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /usr/local/vw-scripts/fix-nginx-ownership.sh
+Restart=always
+RestartSec=5s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=fix-nginx-ownership
+
+[Install]
+WantedBy=multi-user.target
+

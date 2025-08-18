@@ -1,0 +1,15 @@
+- name: Create run-service script
+  template:
+    src: run-service.sh.j2
+    dest: "{{ service_script_base_dir }}/{{ server.service_host_url }}/run-service-{{ server.service_host_name }}.sh"
+    owner: nginx
+    group: nginx
+    mode: '0755'
+  when: inventory_hostname == server.ip
+  with_items: "{{ app_servers }}"
+  loop_control:
+    loop_var: server
+  tags:
+    - create_service_script
+    - dotnet_site_config
+

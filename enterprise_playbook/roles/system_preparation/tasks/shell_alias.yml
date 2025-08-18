@@ -1,0 +1,11 @@
+- name: Add 'll' alias for all users in /etc/bash.bashrc
+  lineinfile:
+    path: /etc/bash.bashrc
+    regexp: '^alias ll='
+    line: "alias ll='ls -althr'"
+    state: present
+    create: yes
+    backup: yes
+  become: yes
+  tags: [shell_alias, system_preparation]
+

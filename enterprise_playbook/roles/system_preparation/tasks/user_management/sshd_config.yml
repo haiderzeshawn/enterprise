@@ -1,0 +1,142 @@
+---
+# roles/system_preparation/tasks/user_management/sshd_config.yml
+- name: "Check if AllowUsers line exists in sshd_config"
+  lineinfile:
+    path: "{{ user_management.ssh_config.sshd_config_path }}"
+    regexp: '^\s*#?\s*AllowUsers'
+    state: absent
+  check_mode: yes
+  register: allowusers_check
+  tags:
+    - ssh_config
+    - sshd
+
+- name: "Get current AllowUsers content"
+  shell: grep "^AllowUsers" {{ user_management.ssh_config.sshd_config_path }} || echo "not_found"
+  register: current_allowusers
+  changed_when: false
+  tags:
+    - ssh_config
+    - sshd
+
+- name: "Check if user {{ user_name }} is already in AllowUsers"
+  set_fact:
+    user_in_allowusers: "{{ user_name in current_allowusers.stdout }}"
+  when: current_allowusers.stdout != "not_found"
+  tags:
+    - ssh_config
+    - sshd
+
+- name: "User {{ user_name }} already in AllowUsers"
+  debug:
+    msg: "User {{ user_name }} is already configured in AllowUsers, skipping modification"
+  when:
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - current_allowusers.stdout != "not_found"
+    - user_in_allowusers | default(false)
+  tags:
+    - ssh_config
+    - sshd
+    - skip
+
+- name: "Add user {{ user_name }} to existing active AllowUsers line"
+  lineinfile:
+    path: "{{ user_management.ssh_config.sshd_config_path }}"
+    regexp: '^(\s*AllowUsers\s+.*)$'
+    line: '\1 {{ user_name }}'
+    backrefs: yes
+    backup: yes
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - allowusers_check.found
+    - "'#' not in current_allowusers.stdout"
+    - current_allowusers.stdout != "not_found"
+    - not (user_in_allowusers | default(false))
+  register: sshd_modified_active
+  tags:
+    - ssh_config
+    - sshd
+    - access_control
+
+- name: "Uncomment and add user {{ user_name }} to commented AllowUsers line"
+  lineinfile:
+    path: "{{ user_management.ssh_config.sshd_config_path }}"
+    regexp: '^\s*#\s*AllowUsers\s+(.*)$'
+    line: 'AllowUsers \1 {{ user_name }}'
+    backrefs: yes
+    backup: yes
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - allowusers_check.found
+    - "'#' in current_allowusers.stdout"
+    - not (user_in_allowusers | default(false))
+  register: sshd_modified_commented
+  tags:
+    - ssh_config
+    - sshd
+    - access_control
+
+- name: "Create new AllowUsers line with {{ user_name }}"
+  lineinfile:
+    path: "{{ user_management.ssh_config.sshd_config_path }}"
+    line: "AllowUsers {{ user_name }}"
+    insertafter: '^#.*AllowUsers.*'
+    backup: yes
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - not allowusers_check.found
+    - current_allowusers.stdout == "not_found"
+  register: sshd_modified_new
+  tags:
+    - ssh_config
+    - sshd
+    - access_control
+
+- name: "Display AllowUsers management result for {{ user_name }}"
+  debug:
+    msg: |
+      AllowUsers Management Result for {{ user_name }}:
+      - AllowUsers line found: {{ allowusers_check.found }}
+      - Current AllowUsers: {{ current_allowusers.stdout }}
+      - User already in AllowUsers: {{ user_in_allowusers | default(false) }}
+      - Action taken: {{ 'Added to existing' if sshd_modified_active is defined and sshd_modified_active.changed else 'Uncommented and added' if sshd_modified_commented is defined and sshd_modified_commented.changed else 'Created new line' if sshd_modified_new is defined and sshd_modified_new.changed else 'No changes needed' }}
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+  tags:
+    - ssh_config
+    - sshd
+    - info
+
+- name: "Display warning when AllowUsers management failed for {{ user_name }}"
+  debug:
+    msg: |
+      WARNING: Could not automatically manage AllowUsers for {{ user_name }} on {{ inventory_hostname }}
+      Current AllowUsers status: {{ current_allowusers.stdout }}
+      Please manually verify SSH access configuration.
+  when: 
+    - user_config.enabled | default(true)
+    - user_config.ssh_access | default(true)
+    - not (user_in_allowusers | default(false))
+    - not (sshd_modified_active is defined and sshd_modified_active.changed)
+    - not (sshd_modified_commented is defined and sshd_modified_commented.changed)
+    - not (sshd_modified_new is defined and sshd_modified_new.changed)
+  tags:
+    - ssh_config
+    - sshd
+    - warning
+
+- name: "Set sshd_config_changed fact"
+  set_fact:
+    sshd_config_changed: true
+  when: 
+    - (sshd_modified_active is defined and sshd_modified_active.changed) or
+      (sshd_modified_commented is defined and sshd_modified_commented.changed) or
+      (sshd_modified_new is defined and sshd_modified_new.changed)
+  tags:
+    - ssh_config
+    - sshd

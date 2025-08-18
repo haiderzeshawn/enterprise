@@ -1,0 +1,35 @@
+---
+- name: Create required directories
+  include_tasks: create_directories.yml
+  tags:
+    - create_directories
+    - system_preparation
+
+- name: Create run-worker scripts
+  include_tasks: create_worker_script.yml
+  tags:
+    - create_worker_script
+    - dotnet_site_config
+
+- name: Create run-service scripts
+  include_tasks: create_service_script.yml
+  tags:
+    - create_service_script
+    - dotnet_site_config
+
+- name: Create and start API services
+  include_tasks: create_api_service.yml
+  tags:
+    - create_api_service
+    - enable_api_service
+    - dotnet_site_config
+    - system_preparation
+
+- name: Create and start Worker services
+  include_tasks: create_worker_service.yml
+  tags:
+    - create_worker_service
+    - enable_worker_service
+    - dotnet_site_config
+    - system_preparation
+

@@ -1,0 +1,116 @@
+---
+- name: Ensure nftables is installed
+  ansible.builtin.package:
+    name: nftables
+    state: present
+  tags: [nftables, nftables_install, system_preparation]
+
+# tasks/nftables_config.yml
+- name: Create nftables directory structure
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/nftables
+    - /etc/nftables/sets
+    - /etc/nftables/rules
+  tags:
+    - nftables
+    - nftables_setup
+
+- name: Generate individual IP sets for enabled services
+  template:
+    src: nft_service_set.j2
+    dest: "/etc/nftables/sets/{{ service_item.value.set_file }}.nft"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ nft_services | dict2items }}"
+  loop_control:
+    loop_var: service_item
+  when: service_item.value.enabled | default(false)
+  notify: validate_and_reload_nftables
+  tags:
+    - nftables
+    - nftables_sets
+    - nftables_ip_sets
+
+- name: Generate port sets for global access
+  template:
+    src: nft_port_set.j2
+    dest: "/etc/nftables/sets/{{ port_set_item.value.set_file }}.nft"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ nft_port_sets | dict2items }}"
+  loop_control:
+    loop_var: port_set_item
+  when: port_set_item.value.enabled | default(false)
+  notify: validate_and_reload_nftables
+  tags:
+    - nftables
+    - nftables_sets
+    - nftables_port_sets
+
+- name: Generate input chain rules
+  template:
+    src: nft_input_chain.j2
+    dest: /etc/nftables/rules/input_chain.nft
+    owner: root
+    group: root
+    mode: '0644'
+  notify: validate_and_reload_nftables
+  tags:
+    - nftables
+    - nftables_rules
+    - nftables_input_chain
+
+- name: Generate output chain rules
+  template:
+    src: nft_output_chain.j2
+    dest: /etc/nftables/rules/output_chain.nft
+    owner: root
+    group: root
+    mode: '0644'
+  notify: validate_and_reload_nftables
+  tags:
+    - nftables
+    - nftables_rules
+    - nftables_output_chain
+
+- name: Generate forward chain rules
+  template:
+    src: nft_forward_chain.j2
+    dest: /etc/nftables/rules/forward_chain.nft
+    owner: root
+    group: root
+    mode: '0644'
+  notify: validate_and_reload_nftables
+  tags:
+    - nftables
+    - nftables_rules
+    - nftables_forward_chain
+
+- name: Generate main nftables configuration
+  template:
+    src: nft_main_config.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: validate_and_reload_nftables
+  tags:
+    - nftables
+    - nftables_main_config
+
+- name: Enable and start nftables service
+  systemd:
+    name: nftables
+    enabled: yes
+    state: started
+  tags:
+    - nftables
+    - nftables_service

@@ -1,0 +1,29 @@
+- name: Install EPEL release on RHEL-based systems
+  ansible.builtin.yum:
+    name: epel-release
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [install_fail2ban, system_preparation]
+
+- name: Install Fail2Ban
+  ansible.builtin.package:
+    name: fail2ban
+    state: present
+  tags: [install_fail2ban, system_preparation]
+
+- name: Deploy jail.local
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: '0644'
+  tags: [install_fail2ban, copy_jail_local_fail2ban, system_preparation]
+
+- name: Enable and start Fail2Ban
+  ansible.builtin.service:
+    name: fail2ban
+    enabled: true
+    state: started
+  tags: [install_fail2ban, copy_jail_local_fail2ban, enable_start_fail2ban, system_preparation]
+

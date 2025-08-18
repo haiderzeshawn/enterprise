@@ -1,0 +1,175 @@
+---
+# tasks/nftables_config.yml - Complete nftables configuration
+- name: Ensure nftables is installed
+  ansible.builtin.package:
+    name: nftables
+    state: present
+  tags: [nftables, nftables_install, system_preparation]
+
+- name: Create nftables directory structure
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/nftables
+    - /etc/nftables/sets
+    - /etc/nftables/rules
+  tags:
+    - nftables
+    - nftables_setup
+
+- name: Generate individual IP sets for enabled services
+  template:
+    src: nft_service_set.j2
+    dest: "/etc/nftables/sets/{{ service_item.value.set_file }}.nft"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ nft_services | dict2items }}"
+  loop_control:
+    loop_var: service_item
+  when: 
+    - service_item.value.enabled | default(false)
+    - service_item.value.source_ips is defined
+    - service_item.value.source_ips | length > 0
+  register: nft_sets_result
+  tags:
+    - nftables
+    - nftables_sets
+    - nftables_ip_sets
+
+- name: Generate port sets for global access
+  template:
+    src: nft_port_set.j2
+    dest: "/etc/nftables/sets/{{ port_set_item.value.set_file }}.nft"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ nft_port_sets | dict2items }}"
+  loop_control:
+    loop_var: port_set_item
+  when: 
+    - port_set_item.value.enabled | default(false)
+    - port_set_item.value.ports is defined
+    - port_set_item.value.ports | length > 0
+  register: nft_port_sets_result
+  tags:
+    - nftables
+    - nftables_sets
+    - nftables_port_sets
+
+- name: Generate input chain rules
+  template:
+    src: nft_input_chain.j2
+    dest: /etc/nftables/rules/input_chain.nft
+    owner: root
+    group: root
+    mode: '0644'
+  register: nft_input_result
+  tags:
+    - nftables
+    - nftables_rules
+    - nftables_input_chain
+
+- name: Generate output chain rules
+  template:
+    src: nft_output_chain.j2
+    dest: /etc/nftables/rules/output_chain.nft
+    owner: root
+    group: root
+    mode: '0644'
+  register: nft_output_result
+  tags:
+    - nftables
+    - nftables_rules
+    - nftables_output_chain
+
+- name: Generate forward chain rules
+  template:
+    src: nft_forward_chain.j2
+    dest: /etc/nftables/rules/forward_chain.nft
+    owner: root
+    group: root
+    mode: '0644'
+  register: nft_forward_result
+  tags:
+    - nftables
+    - nftables_rules
+    - nftables_forward_chain
+
+- name: Generate filter table configuration
+  template:
+    src: nft_filter_table.j2
+    dest: /etc/nftables/filter_table.nft
+    owner: root
+    group: root
+    mode: '0644'
+  register: nft_filter_result
+  tags:
+    - nftables
+    - nftables_filter_table
+
+- name: Generate main nftables configuration
+  template:
+    src: nft_main_config.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: nft_main_result
+  tags:
+    - nftables
+    - nftables_main_config
+
+- name: Test nftables configuration syntax
+  command: nft -c -f /etc/nftables.conf
+  register: nft_syntax_check
+  failed_when: nft_syntax_check.rc != 0
+  changed_when: false
+  tags:
+    - nftables
+    - nftables_test
+
+- name: Display syntax check results if there were errors
+  debug:
+    var: nft_syntax_check.stdout_lines
+  when: nft_syntax_check.rc != 0
+  tags:
+    - nftables
+    - nftables_test
+
+- name: Enable nftables service
+  systemd:
+    name: nftables
+    enabled: yes
+  tags:
+    - nftables
+    - nftables_service
+
+- name: Reload nftables service if configuration changed
+  systemd:
+    name: nftables
+    state: reloaded
+  when: >
+    nft_sets_result.changed or
+    nft_port_sets_result.changed or
+    nft_input_result.changed or
+    nft_output_result.changed or
+    nft_forward_result.changed or
+    nft_filter_result.changed or
+    nft_main_result.changed
+  tags:
+    - nftables
+    - nftables_service
+
+- name: Start nftables service if not running
+  systemd:
+    name: nftables
+    state: started
+  tags:
+    - nftables
+    - nftables_service
+

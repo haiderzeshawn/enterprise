@@ -1,0 +1,190 @@
+---
+# roles/system_preparation/tasks/enterprise_user_management.yml
+# Enterprise User Management with Updated Structure
+
+- name: "Enterprise User Management - Start"
+  debug:
+    msg:
+      - "=== ENTERPRISE USER MANAGEMENT ==="
+      - "Host: {{ inventory_hostname }}"
+      - "IP: {{ ansible_default_ipv4.address }}"
+      - "Groups: {{ group_names }}"
+  tags:
+    - user_management
+    - enterprise
+    - always
+
+- name: "Ensure required directories exist on remote server"
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  loop:
+    - "{{ backup_config.backup_path }}"
+    - "/var/log/user_management"
+  tags:
+    - user_management
+    - setup
+    - directories
+
+- name: "Ensure control node directories exist"
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0700'
+  loop:
+    - "{{ control_node_paths.user_creds }}"
+    - "{{ control_node_paths.ssh_keys }}"
+  delegate_to: localhost
+  run_once: true
+  tags:
+    - user_management
+    - setup
+    - control_node
+
+- name: "Identify current team from inventory groups"
+  set_fact:
+    current_team: "{{ item }}"
+  loop: "{{ team_users.keys() | list }}"
+  when: 
+    - item in group_names
+    - team_users[item].enabled | default(false)
+  tags:
+    - user_management
+    - team_detection
+    - always
+
+- name: "Set current team configuration"
+  set_fact:
+    current_team_config: "{{ team_users[current_team] }}"
+    current_team_inventory: "{{ team_inventory_mapping[current_team] }}"
+  when: current_team is defined
+  tags:
+    - user_management
+    - team_detection
+    - always
+
+- name: "Display team information"
+  debug:
+    msg:
+      - "Current team: {{ current_team | default('UNKNOWN') }}"
+      - "Team description: {{ current_team_config.team_description | default('N/A') }}"
+      - "Team enabled: {{ current_team_config.enabled | default(false) }}"
+      - "Users count: {{ current_team_config.users.keys() | list | length if current_team_config.users is defined else 0 }}"
+      - "Team default groups: {{ current_team_inventory.default_groups | default([]) | join(', ') }}"
+      - "Team additional groups: {{ current_team_inventory.additional_groups | default([]) | join(', ') }}"
+  when: current_team is defined
+  tags:
+    - user_management
+    - team_detection
+    - info
+
+- name: "Skip processing if team not found or disabled"
+  debug:
+    msg: "Skipping {{ inventory_hostname }} - team not found or disabled"
+  when: current_team is not defined or not (current_team_config.enabled | default(false))
+  tags:
+    - user_management
+    - team_detection
+    - skip
+
+- name: "Create backup management"
+  include_tasks: user_management/backup_management.yml
+  when: 
+    - current_team is defined
+    - current_team_config.enabled | default(false)
+    - ssh_config.backup_configs | default(true)
+  tags:
+    - user_management
+    - backup
+    - ssh_config
+
+- name: "Process each user in the team"
+  include_tasks: user_management/process_user.yml
+  loop: "{{ current_team_config.users.keys() | list }}"
+  loop_control:
+    loop_var: user_name
+  vars:
+    user_config: "{{ current_team_config.users[user_name] }}"
+  when: 
+    - current_team is defined
+    - current_team_config.enabled | default(false)
+    - current_team_config.users is defined
+  tags:
+    - user_management
+    - users
+    - create_users
+
+- name: "Find sshd binary location"
+  shell: which sshd || find /usr -name sshd 2>/dev/null | head -1 || echo "/usr/sbin/sshd"
+  register: sshd_path
+  changed_when: false
+  when: 
+    - current_team is defined
+    - ssh_config.validate_before_restart | default(true)
+  tags:
+    - user_management
+    - ssh_config
+    - validation
+
+- name: "Validate sshd configuration"
+  command: "{{ sshd_path.stdout }} -t"
+  register: sshd_test
+  failed_when: sshd_test.rc != 0
+  changed_when: false
+  when: 
+    - current_team is defined
+    - ssh_config.validate_before_restart | default(true)
+    - sshd_path.stdout is defined
+    - sshd_path.stdout != ""
+  tags:
+    - user_management
+    - ssh_config
+    - validation
+
+- name: "Restart sshd service if configuration was modified"
+  service:
+    name: sshd
+    state: restarted
+  when: 
+    - current_team is defined
+    - sshd_config_changed is defined
+    - sshd_config_changed | bool
+    - sshd_test.rc == 0
+  tags:
+    - user_management
+    - ssh_config
+    - service_restart
+
+- name: "Generate team summary report"
+  debug:
+    msg:
+      - "=== TEAM PROCESSING SUMMARY ==="
+      - "Host: {{ inventory_hostname }}"
+      - "Team: {{ current_team | default('NONE') }}"
+      - "Team Description: {{ current_team_config.team_description | default('N/A') }}"
+      - "Users Processed: {{ current_team_config.users.keys() | list | length if current_team_config.users is defined else 0 }}"
+      - "SSH Config Modified: {{ sshd_config_changed | default(false) }}"
+      - "SSH Service Restarted: {{ sshd_config_changed | default(false) and sshd_test.rc == 0 }}"
+  when: current_team is defined
+  tags:
+    - user_management
+    - summary
+    - always
+
+- name: "Log user management completion"
+  lineinfile:
+    path: "/var/log/user_management/deployment.log"
+    line: "{{ ansible_date_time.iso8601 }} - {{ inventory_hostname }} - {{ current_team | default('NO_TEAM') }} - {{ current_team_config.users.keys() | list | length if current_team_config.users is defined else 0 }} users processed"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: current_team is defined
+  tags:
+    - user_management
+    - logging
+    - audit
+

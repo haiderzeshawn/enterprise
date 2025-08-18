@@ -1,0 +1,48 @@
+---
+# roles/system_preparation/tasks/user_management/create_user.yml
+- name: "Build complete groups list for {{ user_name }}"
+  set_fact:
+    all_user_groups: "{{ (current_team_inventory.default_groups | default([])) + (current_team_inventory.additional_groups | default([])) + (user_config.additional_groups | default([])) }}"
+    resolved_primary_group: "{{ user_name if (user_config.primary_group == 'AUTO' or user_config.primary_group == '{{ user_name }}') else user_config.primary_group | default(user_name) }}"
+  tags:
+    - users
+    - groups
+
+- name: "Create user {{ user_name }}"
+  user:
+    name: "{{ user_name }}"
+    password: "{{ user_config.password | password_hash('sha512') if user_config.password and user_config.password != '' else '!' }}"
+    shell: "{{ user_config.shell | default(default_user_settings.shell) }}"
+    create_home: "{{ user_config.create_home | default(default_user_settings.create_home) }}"
+    group: "{{ resolved_primary_group }}"
+    groups: "{{ all_user_groups | join(',') if all_user_groups | length > 0 else omit }}"
+    comment: "{{ user_config.comment | default('') }} - {{ user_config.role | default('') }}"
+    state: present
+    append: yes
+  register: user_created
+  tags:
+    - users
+    - create_user
+
+- name: "Set password expiry for {{ user_name }}"
+  command: "chage -M {{ '99999' if not user_config.password_expire else '90' }} {{ user_name }}"
+  when: 
+    - user_created is succeeded
+  changed_when: false
+  tags:
+    - users
+    - password_policy
+
+- name: "Display user creation details for {{ user_name }}"
+  debug:
+    msg:
+      - "User: {{ user_name }}"
+      - "Primary group: {{ resolved_primary_group }}"
+      - "All groups: {{ all_user_groups | join(', ') if all_user_groups | length > 0 else 'None' }}"
+      - "Shell: {{ user_config.shell | default(default_user_settings.shell) }}"
+      - "Home created: {{ user_config.create_home | default(default_user_settings.create_home) }}"
+  tags:
+    - users
+    - create_user
+    - info
+

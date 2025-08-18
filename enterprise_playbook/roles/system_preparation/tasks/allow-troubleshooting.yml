@@ -1,0 +1,21 @@
+---
+- name: "Ensure group 'all-users-allowtroubleshooting' exists"
+  group:
+    name: "all-users-allowtroubleshooting"
+    state: present
+  tags:
+    - allow-troubleshooting
+    - system_preparation
+
+- name: "Deploy sudoers template to /etc/sudoers.d/all-users-allowtroubleshooting"
+  template:
+    src: "all-users-allowtroubleshooting.j2"
+    dest: "/etc/sudoers.d/all-users-allowtroubleshooting"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  tags:
+    - allow-troubleshooting
+    - system_preparation
+

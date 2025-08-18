@@ -1,0 +1,75 @@
+# Sudoers rules for vwdb-ldba group
+# Rsync
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/rsync * /pgsql-data/*, /usr/bin/rsync * /pgsql-logs/*, /usr/bin/rsync * /pgsql-backup/*, /usr/bin/rsync * /etc/mysql/*, /usr/bin/rsync * /etc/postgresql/*
+# rm
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/rm -rf /pgsql-data/*, /bin/rm -rf /pgsql-logs/*, /bin/rm -rf /pgsql-backup/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/rm -f /pgsql-data/*, /bin/rm -f /pgsql-logs/*, /bin/rm -f /pgsql-backup/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/rm -r /pgsql-data/*, /bin/rm -r /pgsql-logs/*, /bin/rm -r /pgsql-backup/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/rm -rf /etc/mysql/*, /bin/rm -rf /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/rm -f /etc/mysql/*, /bin/rm -f /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/rm -r /etc/mysql/*, /bin/rm -r /etc/postgresql/*
+# chmod/chown
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/chmod * /pgsql-data/*, /bin/chmod -R * /pgsql-data/*, /bin/chmod * /pgsql-logs/*, /bin/chmod -R * /pgsql-logs/*, /bin/chmod * /pgsql-backup/*, /bin/chmod -R * /pgsql-backup/*, /bin/chmod * /etc/mysql/*, /bin/chmod -R * /etc/mysql/*, /bin/chmod * /etc/postgresql/*, /bin/chmod -R * /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/chown * /pgsql-data/*, /bin/chown -R * /pgsql-data/*, /bin/chown * /pgsql-logs/*, /bin/chown -R * /pgsql-logs/*, /bin/chown * /pgsql-backup/*, /bin/chown -R * /pgsql-backup/*, /bin/chown * /etc/mysql/*, /bin/chown -R * /etc/mysql/*, /bin/chown * /etc/postgresql/*, /bin/chown -R * /etc/postgresql/*
+# unzip / zip
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/unzip * -d /pgsql-data/*, /usr/bin/unzip * -d /pgsql-logs/*, /usr/bin/unzip * -d /pgsql-backup/*, /usr/bin/unzip * -d /etc/mysql/*, /usr/bin/unzip * -d /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/zip -r * /pgsql-data/*, /usr/bin/zip -r * /pgsql-logs/*, /usr/bin/zip -r * /pgsql-backup/*, /usr/bin/zip -r * /etc/mysql/*, /usr/bin/zip -r * /etc/postgresql/*
+# gzip / gunzip / zcat
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/gzip /pgsql-data/*, /usr/bin/gzip /pgsql-logs/*, /usr/bin/gzip /pgsql-backup/*, /usr/bin/gzip /etc/mysql/*, /usr/bin/gzip /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/gunzip /pgsql-data/*, /usr/bin/gunzip /pgsql-logs/*, /usr/bin/gunzip /pgsql-backup/*, /usr/bin/gunzip /etc/mysql/*, /usr/bin/gunzip /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/zcat /pgsql-data/*, /usr/bin/zcat /pgsql-logs/*, /usr/bin/zcat /pgsql-backup/*, /usr/bin/zcat /etc/mysql/*, /usr/bin/zcat /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/gzip /pgsql-data/*, /bin/gzip /pgsql-logs/*, /bin/gzip /pgsql-backup/*, /bin/gzip /etc/mysql/*, /bin/gzip /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/gunzip /pgsql-data/*, /bin/gunzip /pgsql-logs/*, /bin/gunzip /pgsql-backup/*, /bin/gunzip /etc/mysql/*, /bin/gunzip /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/zcat /pgsql-data/*, /bin/zcat /pgsql-logs/*, /bin/zcat /pgsql-backup/*, /bin/zcat /etc/mysql/*, /bin/zcat /etc/postgresql/*
+# tar
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/tar -xzf * -C /pgsql-data/*, /usr/bin/tar -xzf * -C /pgsql-logs/*, /usr/bin/tar -xzf * -C /pgsql-backup/*, /usr/bin/tar -xzf * -C /etc/mysql/*, /usr/bin/tar -xzf * -C /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/tar -czf * /pgsql-data/*, /usr/bin/tar -czf * /pgsql-logs/*, /usr/bin/tar -czf * /pgsql-backup/*, /usr/bin/tar -czf * /etc/mysql/*, /usr/bin/tar -czf * /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/tar -xf * -C /pgsql-data/*, /usr/bin/tar -xf * -C /pgsql-logs/*, /usr/bin/tar -xf * -C /pgsql-backup/*, /usr/bin/tar -xf * -C /etc/mysql/*, /usr/bin/tar -xf * -C /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/tar -cf * /pgsql-data/*, /usr/bin/tar -cf * /pgsql-logs/*, /usr/bin/tar -cf * /pgsql-backup/*, /usr/bin/tar -cf * /etc/mysql/*, /usr/bin/tar -cf * /etc/postgresql/*
+# mkdir
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/mkdir -p /pgsql-data/*, /bin/mkdir -p /pgsql-logs/*, /bin/mkdir -p /pgsql-backup/*, /bin/mkdir -p /etc/mysql/*, /bin/mkdir -p /etc/postgresql/*
+# editors
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/vim /pgsql-data/*, /usr/bin/vim /pgsql-logs/*, /usr/bin/vim /pgsql-backup/*, /usr/bin/vim /etc/mysql/*, /usr/bin/vim /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/vi /pgsql-data/*, /usr/bin/vi /pgsql-logs/*, /usr/bin/vi /pgsql-backup/*, /usr/bin/vi /etc/mysql/*, /usr/bin/vi /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/nano /pgsql-data/*, /usr/bin/nano /pgsql-logs/*, /usr/bin/nano /pgsql-backup/*, /usr/bin/nano /etc/mysql/*, /usr/bin/nano /etc/postgresql/*
+# touch
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/touch /pgsql-data/*, /usr/bin/touch /pgsql-logs/*, /usr/bin/touch /pgsql-backup/*, /usr/bin/touch /etc/mysql/*, /usr/bin/touch /etc/postgresql/*
+# cp/mv/scp
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/cp * /pgsql-data/*, /bin/cp * /pgsql-logs/*, /bin/cp * /pgsql-backup/*, /bin/cp * /etc/mysql/*, /bin/cp * /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/cp * /pgsql-data/*, /usr/bin/cp * /pgsql-logs/*, /usr/bin/cp * /pgsql-backup/*, /usr/bin/cp * /etc/mysql/*, /usr/bin/cp * /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/mv * /pgsql-data/*, /bin/mv * /pgsql-logs/*, /bin/mv * /pgsql-backup/*, /bin/mv * /etc/mysql/*, /bin/mv * /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/mv * /pgsql-data/*, /usr/bin/mv * /pgsql-logs/*, /usr/bin/mv * /pgsql-backup/*, /usr/bin/mv * /etc/mysql/*, /usr/bin/mv * /etc/postgresql/*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/scp * /pgsql-data/*, /usr/bin/scp * /pgsql-logs/*, /usr/bin/scp * /pgsql-backup/*, /usr/bin/scp * /etc/mysql/*, /usr/bin/scp * /etc/postgresql/*
+# Database tools (PostgreSQL, MySQL, MongoDB)
+{% for db_cmd in [
+  "psql", "pg_dump", "pg_dumpall", "pg_restore", "createdb", "dropdb", "createuser", "dropuser", "pg_ctl", "pg_basebackup", "vacuumdb", "reindexdb",
+  "mysql", "mysqldump", "mysqladmin", "mysqlcheck", "mysqlimport", "mysqlshow", "mysqld_safe", "mysqld",
+  "mongo", "mongosh", "mongod", "mongos", "mongodump", "mongorestore", "mongoexport", "mongoimport", "mongostat", "mongotop"
+] %}
+%vwdb-ldba ALL=(ALL) NOPASSWD: /usr/bin/{{ db_cmd }} *, /usr/bin/{{ db_cmd }}
+{% for user in ["postgres", "mysql", "mongodb"] %}
+%vwdb-ldba ALL=({{ user }}) NOPASSWD: /usr/bin/{{ db_cmd }} *, /usr/bin/{{ db_cmd }}
+{% endfor %}
+{% endfor %}
+# Database service status
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl status postgresql*, /usr/bin/systemctl status postgresql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl stop postgresql*, /usr/bin/systemctl stop postgresql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl start postgresql*, /usr/bin/systemctl start postgresql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl reload postgresql*, /usr/bin/systemctl reload postgresql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl restart postgresql*, /usr/bin/systemctl restart postgresql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl status mysql*, /usr/bin/systemctl status mysql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl stop mysql*, /usr/bin/systemctl stop mysql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl start mysql*, /usr/bin/systemctl start mysql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl reload mysql*, /usr/bin/systemctl reload mysql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl restart mysql*, /usr/bin/systemctl restart mysql*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl status mariadb*, /usr/bin/systemctl status mariadb*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl stop mariadb*, /usr/bin/systemctl stop mariadb*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl start mariadb*, /usr/bin/systemctl start mariadb*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl reload mariadb*, /usr/bin/systemctl reload mariadb*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl restart mariadb*, /usr/bin/systemctl restart mariadb*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl status mongod*, /usr/bin/systemctl status mongod*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl stop mongod*, /usr/bin/systemctl stop mongod*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl start mongod*, /usr/bin/systemctl start mongod*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl reload mongod*, /usr/bin/systemctl reload mongod*
+%vwdb-ldba ALL=(ALL) NOPASSWD: /bin/systemctl restart mongod*, /usr/bin/systemctl restart mongod*
+

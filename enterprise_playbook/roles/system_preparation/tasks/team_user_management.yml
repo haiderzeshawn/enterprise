@@ -1,0 +1,19 @@
+---
+# Run all: --tags user_mgmt
+# Parts:  --tags resolve_scope,groups,create_users,ssh_keys,sshd_allowusers,sshd_backups
+
+- import_tasks: users_resolve_scope.yml
+  tags: [user_mgmt, resolve_scope]
+
+- import_tasks: users_ensure_groups.yml
+  tags: [user_mgmt, groups]
+
+- import_tasks: users_create.yml
+  tags: [user_mgmt, create_users]
+
+- import_tasks: users_ssh_keys.yml
+  tags: [user_mgmt, ssh_keys]
+
+- import_tasks: users_sshd_allowusers.yml
+  tags: [user_mgmt, sshd_allowusers, sshd_backups]
+

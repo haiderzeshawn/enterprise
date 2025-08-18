@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Debugging
+exec > >(logger -t fix-vwdev-lpyt-ownership) 2>&1
+
+WATCHED_DIRS="{% for dir in dev_pyt_directories %}{{ dir }} {% endfor %}"
+
+while true; do
+    inotifywait -r -e create -e moved_to \
+        --format '%w%f' \
+        $WATCHED_DIRS | while read -r FILE
+    do
+        [ -e "$FILE" ] && chown {{ webserver_user }}:{{ webserver_group }} "$FILE"
+    done
+    sleep 1
+done
+

@@ -1,0 +1,13 @@
+# {{ service_item.value.description }} - {{ service_item.key }}
+set {{ service_item.value.set_name }} {
+    type ipv4_addr;
+    flags interval;
+    elements = {
+{%- for group, ip_list in service_item.value.source_ips.items() %}
+        # {{ group | replace("_", " ") }}
+        {{ ip_list | join(',\n        ') }}{{ "," if not loop.last else "" }}
+{%- endfor %}
+    };
+    comment "{{ service_item.value.description }}";
+}
+

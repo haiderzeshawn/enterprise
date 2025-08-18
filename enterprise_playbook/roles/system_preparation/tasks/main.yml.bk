@@ -1,0 +1,112 @@
+---
+- name: Include initial authentication setup
+  include_tasks: initial_authentication_setup.yml
+  tags: [initial_authentication_setup, system_preparation]
+
+- name: Include sudo installation and OS check
+  include_tasks: check_and_install_sudo.yml
+  tags: [install_sudo, os_check, system_preparation]
+
+- name: Include ansible_deployments user creation
+  include_tasks: create_ansible_user.yml
+  tags: [create_ansible_user, user_setup, system_preparation]
+
+- name: Include public key setup for ansible_deployments user
+  include_tasks: push_key.yml
+  tags: [setup_ansible_user_key, system_preparation]
+
+- name: Include Clevis installation tasks
+  include_tasks: disk_and_mount_setup.yml
+  tags: [install_clevis_luks_initramfs, system_preparation]
+
+- name: Include Tang binding and GRUB setup
+  include_tasks: automated_tang_binding_grub_network.yml
+  tags: [tang_grub, grub_config, cleanup, system_preparation]
+
+- name: Include SSH hardening tasks
+  include_tasks: ssh_hardening.yml
+  tags: [ssh_hardening, system_preparation]
+
+- name: Include Installation for logging
+  include_tasks: logging_monitoring.yml
+  tags: [snoopy_auditd_logging_monitoring, system_preparation]
+
+- name: Include log editing restriction setup
+  include_tasks: restrict_log_editing.yml
+  tags: [deny-logs-editing, system_preparation]
+
+- name: Include sudo permissions for all-users-allowtroubleshooting group
+  include_tasks: allow-troubleshooting.yml
+  tags: [allow-troubleshooting, system_preparation]
+
+- name: Include sudo permissions for all-users-allow-logs-access group
+  include_tasks: all-users-allowlogsaccess.yml
+  tags: [allow-logs-access, system_preparation]
+
+- name: Include vwdb-ldba sudo permissions
+  include_tasks: vwdb_ldba_sudoers.yml
+  tags: [vwdb-ldba-sudoers, system_preparation]
+
+- name: Include ACL and inotify-tools installation
+  include_tasks: install_acl_inotify.yml
+  tags: [acl_installation, system_preparation]
+
+- name: Include DB ACL Setup Tasks
+  import_tasks: vwdb_ldba_acl_setup.yml 
+  tags: [db_acl_implementation, system_preparation]
+
+- name: Include task to generate mysql ownership script
+  ansible.builtin.include_tasks: fix_ownership_script.yml
+  tags: [script_directory, fix_mysql_ownership, fix_postgres_ownership, fix_nginx_ownership, ownership, system_preparation]
+
+- name: Include task to generate mysql ownership script service
+  ansible.builtin.include_tasks: fix_ownership_service.yml
+  tags: [daemon_reload_man, fix_mysql_ownership, fix_postgres_ownership, fix_nginx_ownership, ownership, system_preparation]
+
+- name: Include task to install nginx if not already present
+  ansible.builtin.include_tasks: install_nginx.yml
+  tags: [install_nginx, webserver, system_preparation]
+
+- name: Include task to install .NET SDKs
+  ansible.builtin.include_tasks: install_dotnet.yml
+  tags: [install_dotnet, system_preparation]
+
+- name: Include sudo permissions for vwdev-ldnet
+  include_tasks: vwdev_ldnet_sudoers.yml
+  tags: [vwdev-ldnet-sudoers, system_preparation]
+
+- name: Include DB ACL Setup Tasks for vwdev-ldnet
+  import_tasks: vwdev_ldnet_acl_setup.yml
+  tags: [vwdev-ldnet-db-acl-implementation, system_preparation]
+- name: Include sudo permissions for vwdev-lphp
+  include_tasks: vwdev_lphp_sudoers.yml
+  tags: [vwdev-lphp-sudoers, system_preparation]
+
+- name: Include DB ACL Setup Tasks for vwdev-lphp
+  import_tasks: vwdev_lphp_acl_setup.yml
+  tags: [vwdev-lphp-db-acl-implementation, system_preparation]
+- name: Include sudo permissions for vwtac_ltac
+  include_tasks: vwtac_ltac_sudoers.yml
+  tags: [vwtac_ltac-sudoers, system_preparation]
+
+- name: Include DB ACL Setup Tasks for vwtac_ltac
+  import_tasks: vwtac_ltac_acl_setup.yml
+  tags: [vwtac_ltac-db-acl-implementation, system_preparation]
+- name: Include sudo permissions for vwdev_lpython
+  include_tasks: vwdev_lpython_sudoers.yml
+  tags: [vwdev_lpython-sudoers, system_preparation]
+
+- name: Include ACL Setup Tasks for vwdev_lpython
+  import_tasks: vwdev_lpython_acl_setup.yml
+  tags: [vwdev_lpython-acl-implementation, system_preparation]
+
+    ###########
+# System Preparation Task Entry Point
+
+- name: Create Python service launch scripts
+  import_tasks: create_python_service_script.yml
+  tags:
+    - python_service
+    - create_python_service_dirs
+    - create_python_service_scripts
+

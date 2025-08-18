@@ -1,0 +1,29 @@
+---
+# roles/system_preparation/tasks/disk_and_mount_setup.yml
+
+- name: Update apt cache on Debian/Ubuntu
+  apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == "Debian"
+  tags: [install_clevis_luks_initramfs, system_preparation]
+
+- name: Install Clevis packages on Debian/Ubuntu
+  apt:
+    name:
+      - clevis
+      - clevis-luks
+      - clevis-initramfs
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+  tags: [install_clevis_luks_initramfs, system_preparation]
+
+- name: Install Clevis packages on RHEL
+  package:
+    name:
+      - clevis
+      - clevis-luks
+      - clevis-dracut  # Required for initramfs hooks on RHEL
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+  tags: [install_clevis_luks_initramfs, system_preparation]
+

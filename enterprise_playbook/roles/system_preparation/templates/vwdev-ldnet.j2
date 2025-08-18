@@ -1,0 +1,59 @@
+# Sudoers rules for vwdev-ldnet group
+
+# Rsync
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/rsync * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/rsync * /var/www/engageapp/* *
+
+# rm (Remove files)
+%vwdev-ldnet ALL= NOPASSWD: /bin/rm -rf /var/www/engageapp/*, /bin/rm -f /var/www/engageapp/*, /bin/rm -r /var/www/engageapp/*
+
+# chmod/chown (Change file permissions and ownership)
+%vwdev-ldnet ALL= NOPASSWD: /bin/chmod * /var/www/engageapp/*, /bin/chmod -R * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /bin/chown * /var/www/engageapp/*, /bin/chown -R * /var/www/engageapp/*
+
+# unzip / zip (Archive and unarchive files)
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/unzip * -d /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/zip -r * /var/www/engageapp/*
+
+# tar (Archive and unarchive files)
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -xzf * -C /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -czf * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -xf * -C /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -cf * /var/www/engageapp/*
+
+# mkdir (Make directories)
+%vwdev-ldnet ALL= NOPASSWD: /bin/mkdir -p /var/www/engageapp/*
+
+# Editors (Allow editing files using vi, vim, nano)
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/vim /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/vi /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/nano /var/www/engageapp/*
+
+# touch (Create or modify timestamp of files)
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/touch /var/www/engageapp/*
+
+# cp/mv/scp (Copy, move, and secure copy files)
+%vwdev-ldnet ALL= NOPASSWD: /bin/cp * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/cp * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /bin/mv * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/mv * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/scp * /var/www/engageapp/*
+
+# Git (Allow git operations within the directory)
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/git * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/git -C /var/www/engageapp/* *
+#%vwdev-ldnet ALL=NOPASSWD: /usr/bin/git * /var/www/engageapp/[A-Za-z0-9_/.-]*
+#%vwdev-ldnet ALL=NOPASSWD: /usr/bin/git -C /var/www/engageapp/[A-Za-z0-9_/.-]* *
+
+# Composer (Allow composer operations)
+%vwdev-ldnet ALL= NOPASSWD: /usr/bin/composer * /var/www/engageapp/*
+%vwdev-ldnet ALL= NOPASSWD: /usr/local/bin/composer * /var/www/engageapp/*
+
+# Dotnet (Allow .NET commands in the directory)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/dotnet publish -c Release -o /var/www/engageapp/*, \
+/usr/bin/dotnet build /var/www/engageapp/*, \
+/usr/bin/dotnet restore /var/www/engageapp/*, \
+/usr/bin/dotnet run /var/www/engageapp/*, \
+/usr/bin/dotnet test /var/www/engageapp/*, \
+/usr/bin/dotnet clean /var/www/engageapp/*, \
+/usr/bin/dotnet pack /var/www/engageapp/*

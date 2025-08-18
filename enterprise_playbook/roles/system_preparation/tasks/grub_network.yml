@@ -1,0 +1,29 @@
+---
+- name: Copy automated_grub_network.sh to remote host /tmp
+  copy:
+    src: "roles/system_preparation/scripts/automated_grub_network.sh"
+    dest: "/tmp/automated_grub_network.sh"
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Execute GRUB network configuration script
+  shell: "/tmp/automated_grub_network.sh"
+  register: grub_script_output
+
+- name: Display GRUB script output
+  debug:
+    var: grub_script_output
+
+- name: Update initramfs after GRUB configuration (Ubuntu/Debian)
+  shell: update-initramfs -u
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Update initramfs after GRUB configuration (RHEL/CentOS/Fedora)
+  shell: dracut -f
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Update GRUB (Ubuntu/Debian only)
+  shell: update-grub
+  when: ansible_facts['os_family'] == "Debian"
+

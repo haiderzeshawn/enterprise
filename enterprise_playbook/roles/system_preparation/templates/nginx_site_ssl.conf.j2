@@ -1,0 +1,52 @@
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ item.service_host_url }};
+
+    access_log /var/log/nginx/{{ item.service_host_url }}.redirect.access.log sites_logs buffer=32k flush=5s;
+    error_log /var/log/nginx/{{ item.service_host_url }}.redirect.error.log notice;
+
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS Reverse Proxy
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name {{ item.service_host_url }};
+
+    # SSL Configuration
+    ssl_certificate /etc/pki/tls/certs/star.enteract.live.crt;
+    ssl_certificate_key /etc/pki/tls/private/star.enteract.live.key;
+    ssl_trusted_certificate /etc/pki/tls/certs/star.enteract.live.ca-bundle.pem;
+
+    # Include snippets
+    include /etc/nginx/snippets/restrict-sensitive.conf;
+    include /etc/nginx/snippets/ssl-headers.conf;
+    include /etc/nginx/snippets/security-headers.conf;
+
+    # Logging
+    access_log /var/log/nginx/{{ item.service_host_url }}.main.log sites_logs buffer=32k flush=5s;
+    access_log /var/log/nginx/{{ item.service_host_url }}.proxy.log proxy_logs buffer=32k flush=5s;
+    error_log /var/log/nginx/{{ item.service_host_url }}.error.log warn;
+
+    location / {
+        proxy_pass http://{{ item.service_host_name }}_upstream;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_read_timeout 3600;
+        proxy_redirect off;
+        
+        # Enhanced proxy settings
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+    }
+}

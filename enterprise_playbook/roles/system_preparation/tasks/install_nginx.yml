@@ -1,0 +1,92 @@
+---
+- name: Check if nginx is installed
+  command: nginx -v
+  register: nginx_check
+  ignore_errors: true
+  tags:
+    - install_nginx
+    - check_nginx
+    - webserver
+    - system_preparation
+
+- name: Ensure gnupg is installed (Debian/Ubuntu)
+  apt:
+    name: gnupg
+    state: present
+    update_cache: yes
+  when:
+    - nginx_check.rc != 0
+    - ansible_os_family == "Debian"
+  tags:
+    - install_nginx
+    - gnupg
+    - webserver
+    - system_preparation
+
+- name: Add NGINX signing key (Debian/Ubuntu)
+  apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+    state: present
+  when:
+    - nginx_check.rc != 0
+    - ansible_os_family == "Debian"
+  tags:
+    - install_nginx
+    - nginx_key
+    - webserver
+    - system_preparation
+
+- name: Add NGINX repo (Debian/Ubuntu)
+  apt_repository:
+    repo: "deb https://nginx.org/packages/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release }} nginx"
+    state: present
+    filename: nginx
+  when:
+    - nginx_check.rc != 0
+    - ansible_os_family == "Debian"
+  tags:
+    - install_nginx
+    - nginx_repo
+    - webserver
+    - system_preparation
+
+- name: Add NGINX signing key (RHEL/CentOS/Oracle)
+  rpm_key:
+    key: https://nginx.org/keys/nginx_signing.key
+    state: present
+  when:
+    - nginx_check.rc != 0
+    - ansible_os_family == "RedHat"
+  tags:
+    - install_nginx
+    - nginx_key
+    - webserver
+    - system_preparation
+
+- name: Add NGINX repo (RHEL/CentOS/Oracle)
+  yum_repository:
+    name: nginx-stable
+    description: nginx stable repo
+    baseurl: https://nginx.org/packages/centos/$releasever/$basearch/
+    gpgcheck: 1
+    gpgkey: https://nginx.org/keys/nginx_signing.key
+    enabled: 1
+  when:
+    - nginx_check.rc != 0
+    - ansible_os_family == "RedHat"
+  tags:
+    - install_nginx
+    - nginx_repo
+    - webserver
+    - system_preparation
+
+- name: Install nginx if not installed
+  package:
+    name: nginx
+    state: present
+  when: nginx_check.rc != 0
+  tags:
+    - install_nginx
+    - webserver
+    - system_preparation
+

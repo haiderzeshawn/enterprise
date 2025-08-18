@@ -1,0 +1,10 @@
+# {{ port_set_item.value.description }} - {{ port_set_item.key }}
+set {{ port_set_item.value.set_name }} {
+    type {{ port_set_item.value.type }};
+{%- if port_set_item.value.type == "inet_service" %}
+    flags interval;
+{%- endif %}
+    elements = { {{ port_set_item.value.ports | join(', ') }} };
+    comment "{{ port_set_item.value.description }}";
+}
+

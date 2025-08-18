@@ -1,0 +1,20 @@
+- name: Ensure group 'vwtac_ltac' exists
+  group:
+    name: "vwtac_ltac"
+    state: present
+  tags:
+    - vwtac_ltac-sudoers
+    - system_preparation
+
+- name: Deploy sudoers template for 'vwtac_ltac'
+  template:
+    src: "vwtac_ltac.j2"
+    dest: "/etc/sudoers.d/vwtac_ltac"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  tags:
+    - vwtac_ltac-sudoers
+    - system_preparation
+

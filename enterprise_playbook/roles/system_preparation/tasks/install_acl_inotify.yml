@@ -1,0 +1,20 @@
+---
+- name: Install ACL and inotify-tools on Debian/Ubuntu
+  apt:
+    name:
+      - acl
+      - inotify-tools
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian'
+  tags: [acl_installation, system_preparation]
+
+- name: Install ACL and inotify-tools on RHEL/CentOS/Fedora
+  package:
+    name:
+      - acl
+      - inotify-tools
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [acl_installation, system_preparation]
+

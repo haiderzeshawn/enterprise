@@ -1,0 +1,53 @@
+---
+# roles/system_preparation/tasks/user_management/backup_management.yml
+- name: "Create timestamped backup of sshd_config"
+  copy:
+    src: "{{ user_management.ssh_config.sshd_config_path }}"
+    dest: "{{ backup_config.backup_path }}/sshd_config.{{ ansible_date_time.epoch }}"
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0644'
+  register: backup_created
+  when: user_management.ssh_config.backup_sshd_config | default(true)
+  tags:
+    - backup
+    - ssh_config
+
+- name: "Get list of existing backups"
+  find:
+    paths: "{{ backup_config.backup_path }}"
+    patterns: "sshd_config.*"
+    file_type: file
+  register: existing_backups
+  when: user_management.ssh_config.cleanup_old_backups | default(true)
+  tags:
+    - backup
+    - cleanup
+
+- name: "Remove old backups (keep last {{ backup_config.keep_count }})"
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ existing_backups.files | sort(attribute='mtime') | list }}"
+  when: 
+    - user_management.ssh_config.cleanup_old_backups | default(true)
+    - existing_backups.files | length > backup_config.keep_count
+    - loop_index0 < (existing_backups.files | length - backup_config.keep_count)
+  loop_control:
+    index_var: loop_index0
+  tags:
+    - backup
+    - cleanup
+
+- name: "Display backup information"
+  debug:
+    msg:
+      - "Backup created: {{ backup_created.dest | default('N/A') }}"
+      - "Total backups: {{ existing_backups.files | length if existing_backups.files is defined else 0 }}"
+      - "Backup directory: {{ backup_config.backup_path }}"
+      - "Backup retention: {{ backup_config.keep_count }} files"
+  tags:
+    - backup
+    - info
+

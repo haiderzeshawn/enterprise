@@ -1,0 +1,96 @@
+---
+# Build list of users that need keys
+- name: Users needing SSH keys
+  set_fact:
+    _users_need_keys: >-
+      {{
+        (host_user_items | default([]))
+        | selectattr('value.enabled','defined') | selectattr('value.enabled')
+        | selectattr('value.create_ssh_keys','defined') | selectattr('value.create_ssh_keys')
+        | list
+      }}
+  tags: [user_mgmt, ssh_keys]
+
+# Safe identifier for filenames: prefer hostvars[...].ansible_host, else inventory_hostname
+- name: Derive effective host ID for filenames
+  set_fact:
+    user_mgmt_host_id: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+  tags: [user_mgmt, ssh_keys]
+
+- name: Ensure .ssh directory on remote
+  file:
+    path: "/home/{{ item.key }}/.ssh"
+    state: directory
+    owner: "{{ item.key }}"
+    group: "{{ item.key }}"
+    mode: '0700'
+  loop: "{{ _users_need_keys }}"
+  tags: [user_mgmt, ssh_keys]
+
+- name: Generate SSH keypairs on remote
+  community.crypto.openssh_keypair:
+    path: "/home/{{ item.key }}/.ssh/id_{{ ssh_config.key_type }}"
+    type: "{{ ssh_config.key_type }}"
+    size: "{{ ssh_config.key_size }}"
+    owner: "{{ item.key }}"
+    group: "{{ item.key }}"
+    mode: '0600'
+    comment: "{{ item.key }}@{{ inventory_hostname }}"
+  register: _keypair_result
+  loop: "{{ _users_need_keys }}"
+  tags: [user_mgmt, ssh_keys]
+
+- name: Install public key into authorized_keys
+  authorized_key:
+    user: "{{ item.item.key }}"
+    state: present
+    key: "{{ item.public_key }}"
+  loop: "{{ _keypair_result.results | default([]) }}"
+  when: item.public_key is defined
+  loop_control:
+    label: "{{ item.item.key }}"
+  tags: [user_mgmt, ssh_keys]
+
+- name: Ensure per-team ssh key dir on controller
+  delegate_to: localhost
+  file:
+    path: "{{ control_node_paths.ssh_keys }}/{{ team }}"
+    state: directory
+    mode: '0700'
+  loop: "{{ host_teams }}"
+  loop_control: { loop_var: team }
+  tags: [user_mgmt, ssh_keys]
+
+- name: Fetch private key to controller (username_<hostid>)
+  fetch:
+    src: "/home/{{ item.key }}/.ssh/id_{{ ssh_config.key_type }}"
+    dest: "{{ control_node_paths.ssh_keys }}/{{ item.team }}/{{ item.key }}_{{ user_mgmt_host_id }}"
+    flat: true
+  loop: "{{ _users_need_keys }}"
+  tags: [user_mgmt, ssh_keys]
+
+- name: Fetch public key to controller
+  fetch:
+    src: "/home/{{ item.key }}/.ssh/id_{{ ssh_config.key_type }}.pub"
+    dest: "{{ control_node_paths.ssh_keys }}/{{ item.team }}/{{ item.key }}_{{ user_mgmt_host_id }}.pub"
+    flat: true
+  loop: "{{ _users_need_keys }}"
+  tags: [user_mgmt, ssh_keys]
+
+# Explicit perms on controller – no ansible_host, no fileglob
+- name: Set 0600 on fetched private keys (controller)
+  delegate_to: localhost
+  file:
+    path: "{{ control_node_paths.ssh_keys }}/{{ item.team }}/{{ item.key }}_{{ user_mgmt_host_id }}"
+    mode: '0600'
+  loop: "{{ _users_need_keys }}"
+  tags: [user_mgmt, ssh_keys]
+
+- name: Set 0644 on fetched public keys (controller)
+  delegate_to: localhost
+  file:
+    path: "{{ control_node_paths.ssh_keys }}/{{ item.team }}/{{ item.key }}_{{ user_mgmt_host_id }}.pub"
+    mode: '0644'
+  loop: "{{ _users_need_keys }}"
+  tags: [user_mgmt, ssh_keys]
+

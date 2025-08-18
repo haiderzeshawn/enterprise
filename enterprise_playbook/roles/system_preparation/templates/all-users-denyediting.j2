@@ -1,0 +1,15 @@
+# Explicitly deny editing log files
+%all-users-denyediting ALL= NOPASSWD: !/usr/bin/vi /var/log/*, !/usr/bin/nano /var/log/*, !/usr/bin/vim /var/log/*
+%all-users-denyediting ALL= NOPASSWD: !/bin/rm /var/log/*, !/bin/rm -f /var/log/*, !/bin/rm -rf /var/log/*
+%all-users-denyediting ALL= NOPASSWD: !/usr/bin/truncate -s 0 /var/log/*
+
+# Explicitly prevent log manipulation
+%all-users-denyediting ALL= NOPASSWD: !/bin/echo * > /var/log/*, !/bin/echo * >> /var/log/*
+%all-users-denyediting ALL= NOPASSWD: !/bin/sed -i * /var/log/*
+%all-users-denyediting ALL= NOPASSWD: !/bin/cp * /var/log/*
+%all-users-denyediting ALL= NOPASSWD: !/bin/mv * /var/log/*
+
+# Prevent cat-based redirection to /var/log
+%all-users-denyediting ALL= NOPASSWD: !/bin/cat > /var/log/*, !/bin/cat >> /var/log/*
+%all-users-denyediting ALL= NOPASSWD: !/bin/cat < /var/log/*, !/bin/cat <<EOF > /var/log/*
+

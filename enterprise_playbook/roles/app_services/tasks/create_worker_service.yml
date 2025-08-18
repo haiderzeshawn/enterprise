@@ -1,0 +1,27 @@
+- name: Create Worker systemd service file
+  template:
+    src: worker.service.j2
+    dest: "/etc/systemd/system/{{ server.service_host_name }}-worker.service"
+    mode: '0644'
+  when: inventory_hostname == server.ip
+  with_items: "{{ app_servers }}"
+  loop_control:
+    loop_var: server
+  tags:
+    - create_worker_service
+    - dotnet_site_config
+
+- name: Reload and enable Worker systemd service
+  systemd:
+    daemon_reload: yes
+    name: "{{ server.service_host_name }}-worker"
+    enabled: yes
+    state: started
+  when: inventory_hostname == server.ip
+  with_items: "{{ app_servers }}"
+  loop_control:
+    loop_var: server
+  tags:
+    - enable_worker_service
+    - system_preparation
+

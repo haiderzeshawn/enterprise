@@ -1,0 +1,21 @@
+---
+- name: Ensure script directory exists for Python services
+  file:
+    path: "{{ script_base_directory }}/{{ item.value.service_fdqn }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ python_services | dict2items }}"
+  tags: create_python_service_dirs
+
+- name: Create run script for Python services
+  template:
+    src: run_python_service_script.j2 
+    dest: "{{ script_base_directory }}/{{ item.value.service_fdqn }}/run-service-{{ item.value.service_host_name }}.sh"
+    mode: '0755'
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+  loop: "{{ python_services | dict2items }}"
+  tags: create_python_service_scripts
+

@@ -1,0 +1,621 @@
+---
+- name: Create base directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop:
+    - "{{ deployment_base_dir }}"
+    - "{{ service_script_base_dir }}"
+  tags:
+    - directories
+    - dotnet_nginx_config
+
+- name: Debug - Show current host and services
+  debug:
+    msg: "Host: {{ inventory_hostname }}, Services: {{ dotnet_apps_hosts[inventory_hostname] | default('No services found') }}"
+  tags:
+    - directories
+    - debug
+    - dotnet_nginx_config
+
+# API Directory Creation - Conditional
+- name: Create application directories for each service - API
+  file:
+    path: "{{ item.service_app_working_dir }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_app_api_required | default(false)
+  tags:
+    - directories
+    - app-dirs
+    - dotnet_nginx_config
+
+# Worker Directory Creation - Conditional
+- name: Create application directories for each service - Worker
+  file:
+    path: "{{ item.service_worker_working_dir }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_worker_required | default(false)
+  tags:
+    - directories
+    - app-dirs
+    - dotnet_nginx_config
+
+- name: Create application directories for each service - Scripts
+  file:
+    path: "{{ item.service_script_dir }}"
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: dotnet_apps_hosts[inventory_hostname] is defined
+  tags:
+    - directories
+    - app-dirs
+    - dotnet_nginx_config
+
+# API Script Creation - Conditional
+- name: Create startup script for API services
+  template:
+    src: service_api_script.sh.j2
+    dest: "{{ item.service_script_dir }}/run-service-{{ item.service_host_name }}-api.sh"
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_app_api_required | default(false)
+  tags:
+    - scripts
+    - api-scripts
+    - dotnet_nginx_config
+
+- name: Skip API script creation message
+  debug:
+    msg: "API option is false in var file for {{ item.service_host_name }}, skipping it for now"
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - not (item.service_app_api_required | default(false))
+  tags:
+    - scripts
+    - api-scripts
+    - dotnet_nginx_config
+
+# Worker Script Creation - Conditional
+- name: Create startup script for Worker services
+  template:
+    src: service_worker_script.sh.j2
+    dest: "{{ item.service_script_dir }}/run-service-{{ item.service_host_name }}-worker.sh"
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_worker_required | default(false)
+  tags:
+    - scripts
+    - worker-scripts
+    - dotnet_nginx_config
+
+- name: Skip Worker script creation message
+  debug:
+    msg: "Worker option is false in var file for {{ item.service_host_name }}, skipping it for now"
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - not (item.service_worker_required | default(false))
+  tags:
+    - scripts
+    - worker-scripts
+    - dotnet_nginx_config
+
+#######################################
+# SYSTEMD SERVICE CREATION - CONDITIONAL
+#######################################
+
+# API Systemd Services - Conditional
+- name: Create systemd service file for API services
+  template:
+    src: api-service.service.j2
+    dest: "{{ systemd_service_dir }}/{{ item.service_host_name }}-api.service"
+    mode: '0644'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_app_api_required | default(false)
+  retries: 3
+  delay: 5
+  tags:
+    - systemd
+    - api-services
+    - dotnet_nginx_config
+
+# Worker Systemd Services - Conditional
+- name: Create systemd service file for Worker services
+  template:
+    src: worker-service.service.j2
+    dest: "{{ systemd_service_dir }}/{{ item.service_host_name }}-worker.service"
+    mode: '0644'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_worker_required | default(false)
+  retries: 3
+  delay: 5
+  tags:
+    - systemd
+    - worker-services
+    - dotnet_nginx_config
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  tags:
+    - systemd
+    - systemd-reload
+    - dotnet_nginx_config
+
+#######################################
+# SERVICE MANAGEMENT - CONDITIONAL
+#######################################
+
+# API Service Management - Conditional
+- name: Enable API services (without starting)
+  systemd:
+    name: "{{ item.service_host_name }}-api"
+    enabled: yes
+    daemon_reload: yes
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_app_api_required | default(false)
+  retries: 3
+  delay: 5
+  tags:
+    - services
+    - api-services
+    - enable-services
+    - dotnet_nginx_config
+
+- name: Start API services
+  systemd:
+    name: "{{ item.service_host_name }}-api"
+    state: started
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_app_api_required | default(false)
+  retries: 3
+  delay: 5
+  tags:
+    - services
+    - api-services
+    - start-services
+    - dotnet_nginx_config
+
+# Worker Service Management - Conditional
+- name: Enable Worker services (without starting)
+  systemd:
+    name: "{{ item.service_host_name }}-worker"
+    enabled: yes
+    daemon_reload: yes
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_worker_required | default(false)
+  retries: 3
+  delay: 5
+  tags:
+    - services
+    - worker-services
+    - enable-services
+    - dotnet_nginx_config
+
+- name: Start Worker services
+  systemd:
+    name: "{{ item.service_host_name }}-worker"
+    state: started
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.service_worker_required | default(false)
+  retries: 3
+  delay: 5
+  tags:
+    - services
+    - worker-services
+    - start-services
+    - dotnet_nginx_config
+
+#######################################
+# SSL CONFIGURATION - DYNAMIC
+#######################################
+
+- name: Debug - SSL configuration for each service
+  debug:
+    msg: 
+      - "Service: {{ item.service_host_name }}"
+      - "SSL Certbot: {{ item.ssl_certbot | default(false) }}"
+      - "SSL Public CA: {{ item.ssl_public_ca | default(false) }}"
+      - "SSL Self-signed: {{ item.ssl_self_signed | default(false) }}"
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: dotnet_apps_hosts[inventory_hostname] is defined
+  tags:
+    - ssl
+    - debug
+    - dotnet_nginx_config
+
+# CERTBOT SSL CONFIGURATION
+- name: Install Certbot (when ssl_certbot is true)
+  apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: yes
+  when: dotnet_apps_hosts[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - dotnet_nginx_config
+
+- name: Create ACME challenge snippet
+  copy:
+    content: |
+      # ACME Challenge location
+      location ^~ /.well-known/acme-challenge/ {
+          root /var/www/html;
+          try_files $uri =404;
+      }
+    dest: /etc/nginx/snippets/acme-challenge.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: dotnet_apps_hosts[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - dotnet_nginx_config
+
+- name: Create web root for ACME challenges
+  file:
+    path: /var/www/html/.well-known/acme-challenge
+    state: directory
+    owner: "{{ webserver_user }}"
+    group: "{{ webserver_group }}"
+    mode: '0755'
+    recurse: yes
+  when: dotnet_apps_hosts[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - dotnet_nginx_config
+
+# Create temporary HTTP configurations for Certbot validation
+- name: Create temporary HTTP site configurations for Certbot
+  template:
+    src: nginx_site_http_certbot.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - ssl
+    - certbot
+    - nginx_config
+    - dotnet_nginx_config
+
+# Enable HTTP sites for Certbot validation
+- name: Enable HTTP sites for Certbot validation
+  file:
+    src: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.service_host_url }}.conf"
+    state: link
+    force: yes
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - ssl
+    - certbot
+    - nginx_config
+    - dotnet_nginx_config
+
+- name: Remove default Nginx site before Certbot
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  when: dotnet_apps_hosts[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - nginx_config
+    - dotnet_nginx_config
+
+- name: Test and reload Nginx for Certbot validation
+  shell: |
+    nginx -t && systemctl reload nginx
+  when: dotnet_apps_hosts[inventory_hostname] | selectattr('ssl_certbot', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - certbot
+    - nginx_config
+    - dotnet_nginx_config
+
+# Generate Certbot certificates
+- name: Generate Certbot SSL certificates
+  shell: |
+    certbot --nginx \
+      -d {{ item.service_host_url }} \
+      --email {{ ssl_email }} \
+      --agree-tos \
+      --non-interactive \
+      --redirect
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - ssl
+    - certbot
+    - dotnet_nginx_config
+
+# SELF-SIGNED SSL CONFIGURATION
+- name: Create SSL directories for self-signed certificates
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/pki/tls/certs
+    - /etc/pki/tls/private
+  when: dotnet_apps_hosts[inventory_hostname] | selectattr('ssl_self_signed', 'equalto', true) | list | length > 0
+  tags:
+    - ssl
+    - self-signed
+    - dotnet_nginx_config
+
+- name: Generate self-signed wildcard SSL certificates
+  shell: |
+    openssl req -x509 -nodes -days 365 -newkey rsa:4096 \
+    -keyout /etc/pki/tls/private/star.{{ item.service_host_url }}.key \
+    -out /etc/pki/tls/certs/star.{{ item.service_host_url }}.pem \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=*.{{ first_level_domains.parent_domain1 }}"
+  args:
+    creates: "/etc/pki/tls/certs/star.{{ item.service_host_url }}.pem"
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_self_signed | default(false)
+  tags:
+    - ssl
+    - self-signed
+    - dotnet_nginx_config
+
+# PUBLIC CA SSL CONFIGURATION
+- name: Copy public CA SSL certificates
+  copy:
+    src: "ssl/{{ item.service_host_url }}.crt"
+    dest: "/etc/pki/tls/certs/{{ item.service_host_url }}.crt"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_public_ca | default(false)
+  tags:
+    - ssl
+    - public-ca
+    - dotnet_nginx_config
+
+- name: Copy public CA SSL private keys
+  copy:
+    src: "ssl/{{ item.service_host_url }}.key"
+    dest: "/etc/pki/tls/private/{{ item.service_host_url }}.key"
+    owner: root
+    group: root
+    mode: '0600'
+    backup: yes
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_public_ca | default(false)
+  tags:
+    - ssl
+    - public-ca
+    - dotnet_nginx_config
+
+#######################################
+# NGINX CONFIGURATION - CONDITIONAL
+#######################################
+
+- name: Create Nginx configuration directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/nginx/snippets
+    - /etc/nginx/conf.d
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+  tags:
+    - nginx_config
+    - nginx_dirs
+    - dotnet_nginx_config
+
+- name: Create main Nginx configuration from template
+  template:
+    src: dot_net_nginx_nginx_conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  tags:
+    - nginx_config
+    - nginx_main_config
+    - dotnet_nginx_config
+
+- name: Create security headers snippet
+  template:
+    src: security-headers.conf.j2
+    dest: /etc/nginx/snippets/security-headers.conf
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - nginx_config
+    - nginx_snippets
+    - dotnet_nginx_config
+
+- name: Create upstream configuration for each service
+  copy:
+    content: |
+      upstream {{ item.service_host_name }}_upstream {
+          least_conn;
+          server {{ item.primary_backend_server }}:{{ item.service_port }} weight=1 max_fails=3 fail_timeout=30s;
+          keepalive 32;
+          keepalive_requests 1000;
+          keepalive_timeout 60s;
+      }
+    dest: "/etc/nginx/conf.d/{{ item.service_host_name }}_upstream.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: dotnet_apps_hosts[inventory_hostname] is defined
+  tags:
+    - nginx_config
+    - nginx_upstream
+    - dotnet_nginx_config
+
+# Create final SSL site configurations based on SSL type
+- name: Create Certbot SSL site configurations
+  template:
+    src: nginx_site_ssl_certbot.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  tags:
+    - nginx_config
+    - nginx_sites
+    - ssl_certbot
+    - dotnet_nginx_config
+
+- name: Create self-signed SSL site configurations
+  template:
+    src: nginx_site_ssl_self_signed.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_self_signed | default(false)
+  tags:
+    - nginx_config
+    - nginx_sites
+    - ssl_self_signed
+    - dotnet_nginx_config
+
+- name: Create public CA SSL site configurations
+  template:
+    src: nginx_site_ssl_public_ca.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_public_ca | default(false)
+  tags:
+    - nginx_config
+    - nginx_sites
+    - ssl_public_ca
+    - dotnet_nginx_config
+
+- name: Enable Nginx sites by creating symlinks
+  file:
+    src: "/etc/nginx/sites-available/{{ item.service_host_url }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.service_host_url }}.conf"
+    state: link
+    force: yes
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: dotnet_apps_hosts[inventory_hostname] is defined
+  tags:
+    - nginx_config
+    - nginx_enable_sites
+    - dotnet_nginx_config
+
+- name: Test Nginx configuration syntax
+  command: nginx -t
+  register: nginx_test_result
+  changed_when: false
+  failed_when: nginx_test_result.rc != 0
+  tags:
+    - nginx_config
+    - nginx_test
+    - dotnet_nginx_config
+
+- name: Reload Nginx
+  systemd:
+    name: nginx
+    state: reloaded
+  when: nginx_test_result.rc == 0
+  tags:
+    - nginx_config
+    - nginx_reload
+    - dotnet_nginx_config
+
+- name: Test SSL connectivity for Certbot sites
+  uri:
+    url: "https://{{ item.service_host_url }}"
+    method: GET
+    validate_certs: yes
+  loop: "{{ dotnet_apps_hosts[inventory_hostname] | default([]) }}"
+  when: 
+    - dotnet_apps_hosts[inventory_hostname] is defined
+    - item.ssl_certbot | default(false)
+  ignore_errors: yes
+  tags:
+    - ssl
+    - ssl_test
+    - dotnet_nginx_config
+

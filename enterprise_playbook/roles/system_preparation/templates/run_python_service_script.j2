@@ -1,0 +1,8 @@
+#!/bin/bash
+
+exec -a "pyt_{{ item.value.service_host_name }}" \
+  {{ item.value.service_venv }}/bin/{{ item.value.local_service_hosting }} \
+  {{ item.value.entry_point }}:{{ item.value.service_app }} \
+  --host {{ item.value.service_listen_host }} \
+  --port {{ item.value.service_port }} "$@"
+

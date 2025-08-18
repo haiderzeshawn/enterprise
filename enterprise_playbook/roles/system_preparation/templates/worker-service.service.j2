@@ -1,0 +1,19 @@
+[Unit]
+Description=E21 - {{ item.service_host_name }} - Worker
+After=network.target
+
+[Service]
+WorkingDirectory={{ item.service_worker_working_dir }}
+ExecStart={{ item.service_script_dir }}/run-service-{{ item.service_host_name }}-worker.sh
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier={{ item.service_host_name }}
+User={{ webserver_user }}
+Group={{ webserver_group }}
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+[Install]
+WantedBy=multi-user.target
+

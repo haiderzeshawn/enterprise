@@ -1,0 +1,80 @@
+---
+- name: validate and restart ssh service
+  block:
+    - name: Validate SSH config syntax
+      ansible.builtin.command: /usr/sbin/sshd -t
+      notify: restart ssh service
+      changed_when: false
+
+  rescue:
+    - name: SSH config validation failed - aborting
+      ansible.builtin.debug:
+        msg: "SSH configuration syntax error detected. Aborting..."
+      failed_when: true
+
+- name: restart ssh service
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+
+- name: Restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted
+
+- name: Restart auditd
+  service:
+    name: auditd
+    state: restarted
+
+- name: Reload audit rules
+  command: augenrules --load
+  notify: Restart auditd
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Restart Python service
+  ansible.builtin.service:
+    name: "{{ item.service_hostname }}" # Use 'item' here as well, if the handler is called in a loop context
+    state: restarted
+    enabled: true
+
+- name: validate_and_reload_nftables
+  block:
+    - name: Test nftables configuration syntax
+      command: nft -c -f /etc/nftables.conf
+      register: nft_syntax_check
+      failed_when: nft_syntax_check.rc != 0
+      
+    - name: Display syntax check output if failed
+      debug:
+        var: nft_syntax_check.stdout_lines
+      when: nft_syntax_check.rc != 0
+      
+    - name: Reload nftables if syntax is valid
+      systemd:
+        name: nftables
+        state: reloaded
+      when: nft_syntax_check.rc == 0
+
+- name: restart_nftables
+  systemd:
+    name: nftables
+    state: restarted
+
+- name: validate sshd
+  listen: reload sshd
+  command: "sshd -t -f {{ user_management.ssh_config.sshd_config_path }}"
+  changed_when: false
+  failed_when: ssh_config.validate_before_restart | bool and (result.rc != 0)
+  register: result
+
+- name: reload sshd
+  listen: reload sshd
+  service:
+    name: "{{ (ansible_facts.os_family == 'Debian') | ternary('ssh','sshd') }}"
+    state: reloaded
+  when: (not ssh_config.validate_before_restart | bool) or (result.rc == 0)
+

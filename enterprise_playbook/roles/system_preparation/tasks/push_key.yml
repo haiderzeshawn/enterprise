@@ -1,0 +1,46 @@
+---
+- name: Check if public key file exists on control node
+  stat:
+    path: "{{ ansible_user_public_key_path }}"
+  delegate_to: localhost
+  register: pub_key_file
+  tags: [setup_ansible_user_key]
+
+- name: Read public key from control node
+  slurp:
+    src: "{{ ansible_user_public_key_path }}"
+  delegate_to: localhost
+  when: pub_key_file.stat.exists
+  register: pub_key_raw
+  tags: [setup_ansible_user_key]
+
+- name: Set decoded public key content
+  set_fact:
+    pub_key: "{{ pub_key_raw['content'] | b64decode }}"
+  when: pub_key_raw is defined
+  tags: [setup_ansible_user_key]
+
+- name: Ensure ~/.ssh directory exists for {{ ansible_user_to_create }}
+  file:
+    path: "/home/{{ ansible_user_to_create }}/.ssh"
+    state: directory
+    owner: "{{ ansible_user_to_create }}"
+    group: "{{ ansible_user_to_create }}"
+    mode: '0700'
+  when: pub_key is defined
+  tags: [setup_ansible_user_key]
+
+- name: Ensure public key is present only once in authorized_keys
+  lineinfile:
+    path: "/home/{{ ansible_user_to_create }}/.ssh/authorized_keys"
+    line: "{{ pub_key | trim }}"
+    create: yes
+    owner: "{{ ansible_user_to_create }}"
+    group: "{{ ansible_user_to_create }}"
+    mode: '0600'
+    state: present
+    insertafter: EOF
+    regexp: "^{{ pub_key | trim | regex_escape() }}$"
+  when: pub_key is defined
+  tags: [setup_ansible_user_key]
+

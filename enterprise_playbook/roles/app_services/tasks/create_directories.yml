@@ -1,0 +1,21 @@
+- name: Create required directories for services
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: nginx
+    group: nginx
+    mode: '0755'
+  loop:
+    - "{{ deployment_base_dir }}/{{ server.service_host_url }}/Api/Stable_Runing"
+    - "{{ deployment_base_dir }}/{{ server.service_host_url }}/Worker/Stable_Runing"
+    - "{{ service_script_base_dir }}/{{ server.service_host_url }}"
+  loop_control:
+    label: "{{ item }}"
+  when: inventory_hostname == server.ip
+  with_items: "{{ app_servers }}"
+  loop_control:
+    loop_var: server
+  tags:
+    - create_directories
+    - system_preparation
+

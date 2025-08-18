@@ -1,0 +1,165 @@
+---
+# tasks/generate_team_ssh_keys.yml - Fixed SSH key generation for a single team
+- name: "Create SSH directories for {{ current_team }} team users"
+  file:
+    path: "/home/{{ user_item.key }}/.ssh"
+    state: directory
+    owner: "{{ user_item.key }}"
+    group: "{{ user_item.key }}"
+    mode: '0700'
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when:
+    - user_item.value.enabled | default(false)
+    - user_item.value.ssh_access | default(false)
+    - user_item.value.create_ssh_keys | default(false)
+  tags:
+    - users
+    - team_users
+    - ssh_keys
+
+- name: "Generate SSH key pairs on remote host for {{ current_team }} team users"
+  openssh_keypair:
+    path: "/home/{{ user_item.key }}/.ssh/id_rsa"
+    type: rsa
+    size: 2048
+    owner: "{{ user_item.key }}"
+    group: "{{ user_item.key }}"
+    mode: '0600'
+    comment: "{{ user_item.key }}@{{ current_team }}-{{ inventory_hostname }}"
+    force: no
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when:
+    - user_item.value.enabled | default(false)
+    - user_item.value.ssh_access | default(false)
+    - user_item.value.create_ssh_keys | default(false)
+  register: ssh_key_generation
+  tags:
+    - users
+    - team_users
+    - ssh_keys
+
+- name: "Add public keys to authorized_keys for {{ current_team }} team"
+  authorized_key:
+    user: "{{ user_item.key }}"
+    key: "{{ lookup('file', '/home/' + user_item.key + '/.ssh/id_rsa.pub') }}"
+    comment: "{{ user_item.key }}@{{ current_team }}-{{ inventory_hostname }}"
+    state: present
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when:
+    - user_item.value.enabled | default(false)
+    - user_item.value.ssh_access | default(false)
+    - user_item.value.create_ssh_keys | default(false)
+  tags:
+    - users
+    - team_users
+    - ssh_keys
+
+- name: "Fetch private keys from remote host to control node for {{ current_team }} team"
+  fetch:
+    src: "/home/{{ user_item.key }}/.ssh/id_rsa"
+    dest: "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.pem"
+    flat: yes
+    mode: '0600'
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when:
+    - user_item.value.enabled | default(false)
+    - user_item.value.ssh_access | default(false)
+    - user_item.value.create_ssh_keys | default(false)
+  tags:
+    - users
+    - team_users
+    - ssh_keys
+
+- name: "Fetch public keys from remote host to control node for {{ current_team }} team"
+  fetch:
+    src: "/home/{{ user_item.key }}/.ssh/id_rsa.pub"
+    dest: "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.pub"
+    flat: yes
+    mode: '0644'
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when:
+    - user_item.value.enabled | default(false)
+    - user_item.value.ssh_access | default(false)
+    - user_item.value.create_ssh_keys | default(false)
+  tags:
+    - users
+    - team_users
+    - ssh_keys
+
+- name: "Convert private keys to PPK format for {{ current_team }} team (control node only)"
+  shell: |
+    if command -v puttygen >/dev/null 2>&1; then
+      if [ -f "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.pem" ]; then
+        puttygen "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.pem" \
+                 -o "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.ppk" \
+                 -O private
+        echo "PPK_CREATED_{{ user_item.key }}"
+      else
+        echo "PPK_SKIPPED_NO_PEM_{{ user_item.key }}"
+      fi
+    else
+      echo "PPK_SKIPPED_NO_PUTTYGEN_{{ user_item.key }}"
+    fi
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when:
+    - user_item.value.enabled | default(false)
+    - user_item.value.ssh_access | default(false)
+    - user_item.value.create_ssh_keys | default(false)
+  register: ppk_conversion
+  delegate_to: localhost
+  run_once: true
+  tags:
+    - users
+    - team_users
+    - ssh_keys
+    - ppk_conversion
+
+- name: "Display {{ current_team }} SSH key generation summary"
+  debug:
+    msg: |
+      🔑 SSH Key Generation Summary for {{ current_team }} team on {{ inventory_hostname }}:
+      {% set ssh_key_users = team_users[current_team].users | dict2items | selectattr('value.enabled') | selectattr('value.ssh_access', 'defined') | selectattr('value.ssh_access') | selectattr('value.create_ssh_keys', 'defined') | selectattr('value.create_ssh_keys') | map(attribute='key') | list %}
+      👥 Users with SSH keys: {{ ssh_key_users | join(', ') }}
+      
+      📁 Key Files Generated on Control Node:
+      {% for username in ssh_key_users %}
+      - {{ user_management.ssh_keys_directory }}/{{ username }}_{{ inventory_hostname }}.pem (Private - Linux/Mac)
+      - {{ user_management.ssh_keys_directory }}/{{ username }}_{{ inventory_hostname }}.pub (Public)
+      {% if ppk_conversion is defined and ppk_conversion.results %}
+      {% for result in ppk_conversion.results %}
+      {% if result.stdout is defined and 'PPK_CREATED_' + username in result.stdout %}
+      - {{ user_management.ssh_keys_directory }}/{{ username }}_{{ inventory_hostname }}.ppk (Private - PuTTY)
+      {% endif %}
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
+      
+      🔗 SSH Connection Examples:
+      {% for username in ssh_key_users %}
+      ssh -i {{ user_management.ssh_keys_directory }}/{{ username }}_{{ inventory_hostname }}.pem {{ username }}@{{ inventory_hostname }}
+      {% endfor %}
+      
+      📁 Remote Host SSH Setup:
+      {% for username in ssh_key_users %}
+      - /home/{{ username }}/.ssh/id_rsa (private key on server)
+      - /home/{{ username }}/.ssh/id_rsa.pub (public key on server)
+      - /home/{{ username }}/.ssh/authorized_keys (contains public key)
+      {% endfor %}
+  tags:
+    - users
+    - team_users
+    - ssh_keys
+    - user_summary
+

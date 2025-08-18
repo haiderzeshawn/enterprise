@@ -1,0 +1,13 @@
+# Block access to hidden files and backup files
+location ~ /\.(?!well-known).* {
+    deny all;
+}
+
+# Deny access to config/source/log files
+location ~* /(README|readme|LICENSE|license|.*\.conf|.*\.log|.*\.bak)$ {
+    deny all;
+}
+
+# Prevent directory listing
+autoindex off;
+

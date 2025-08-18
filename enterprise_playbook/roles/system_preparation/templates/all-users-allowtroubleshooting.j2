@@ -1,0 +1,43 @@
+# System status and health monitoring commands
+Cmnd_Alias SYSTEM_STATUS = /usr/bin/top, /usr/bin/htop, /usr/bin/atop, /usr/bin/vmstat, /usr/bin/iostat, /usr/bin/free, /usr/bin/uptime
+
+# Disk-related commands
+Cmnd_Alias DISK_CMDS = /bin/df *, /usr/bin/du *, /usr/bin/lsblk *, /usr/bin/mount
+
+# Process inspection commands
+Cmnd_Alias PROCESS_CMDS = /bin/ps *, /usr/bin/lsof *, /usr/bin/strace *, /usr/bin/pstree *
+
+# Service monitoring commands
+Cmnd_Alias SERVICE_CMDS = /bin/systemctl status *, /bin/systemctl list-units *, /usr/sbin/service status *
+
+# Log inspection commands
+Cmnd_Alias LOGS_CMDS = /bin/journalctl *, /usr/bin/tail *, /usr/bin/less *, /usr/bin/cat /var/log/*, /usr/bin/grep /var/log/*, /usr/bin/grep *
+
+# Connectivity and basic network troubleshooting
+Cmnd_Alias CONNECTIVITY_CMDS = /usr/bin/ping *, /usr/bin/traceroute *, /usr/bin/tracepath *, /usr/bin/mtr *
+
+# DNS troubleshooting commands
+Cmnd_Alias DNS_CMDS = /usr/bin/dig *, /usr/bin/nslookup *, /usr/bin/host *, /usr/bin/whois *
+
+# Socket connectivity testing
+Cmnd_Alias SOCKET_CMDS = /usr/bin/telnet *, /usr/bin/nc *, /usr/bin/netcat *
+
+# Packet and port analysis
+Cmnd_Alias PACKET_ANALYSIS = /usr/bin/tcpdump *, /usr/sbin/tcpdump *, /usr/bin/nmap *
+
+# Detailed network info tools
+Cmnd_Alias NETWORK_INFO = /usr/bin/netstat *, /usr/bin/ss *, /usr/bin/ip *, /usr/sbin/ip *, /usr/bin/ifconfig *, /usr/sbin/ifconfig *, /usr/bin/arp *, /usr/sbin/arp *, /usr/bin/route *, /usr/sbin/route *
+
+# HTTP/HTTPS utilities
+Cmnd_Alias WEB_TOOLS = /usr/bin/curl *, /usr/bin/wget *
+
+# Firewall inspection (not modification)
+Cmnd_Alias FIREWALL = /usr/sbin/iptables *
+
+# Final rule for group 'all-users-allowtroubleshooting'
+%all-users-allowtroubleshooting ALL=(ALL) NOPASSWD: \
+    CONNECTIVITY_CMDS, DNS_CMDS, SOCKET_CMDS, PACKET_ANALYSIS, \
+    NETWORK_INFO, WEB_TOOLS, FIREWALL, SYSTEM_STATUS, DISK_CMDS, \
+    PROCESS_CMDS, SERVICE_CMDS, LOGS_CMDS
+
+

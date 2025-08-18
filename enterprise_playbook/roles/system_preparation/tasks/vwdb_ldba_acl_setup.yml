@@ -1,0 +1,59 @@
+---
+- name: Set ACLs for both directories and files
+  block:
+
+    - name: Set ACL rwx recursively on directories
+      command: setfacl -R -m g:{{ db_group }}:rwx {{ item }}
+      loop: "{{ db_directories }}"
+      register: acl_dirs
+      failed_when: false
+      ignore_errors: true
+      tags:
+        - db_acl_implementation
+        - system_preparation
+
+    - name: Set default ACL rwx on directories (for future files/folders)
+      command: setfacl -dR -m g:{{ db_group }}:rwx {{ item }}
+      loop: "{{ db_directories }}"
+      register: default_acl_dirs
+      failed_when: false
+      ignore_errors: true
+      tags:
+        - db_acl_implementation
+        - system_preparation
+
+    - name: Set ACL rwx on individual files
+      command: setfacl -m g:{{ db_group }}:rwx {{ item }}
+      loop: "{{ db_files }}"
+      register: acl_files
+      failed_when: false
+      ignore_errors: true
+      tags:
+        - db_acl_implementation
+        - system_preparation
+
+    - name: Display results for directories ACL set
+      debug:
+        msg: "Directory ACL applied to {{ item.item }}: {{ item.stdout if item.rc == 0 else item.stderr }}"
+      loop: "{{ acl_dirs.results }}"
+      tags:
+        - db_acl_implementation
+        - system_preparation
+
+    - name: Display results for directories default ACL set
+      debug:
+        msg: "Default ACL applied to {{ item.item }}: {{ item.stdout if item.rc == 0 else item.stderr }}"
+      loop: "{{ default_acl_dirs.results }}"
+      tags:
+        - db_acl_implementation
+        - system_preparation
+
+    - name: Display results for file ACL set
+      debug:
+        msg: "File ACL applied to {{ item.item }}: {{ item.stdout if item.rc == 0 else item.stderr }}"
+      loop: "{{ acl_files.results }}"
+      tags:
+        - db_acl_implementation
+        - system_preparation
+
+

@@ -1,0 +1,17 @@
+- name: Ensure group 'vwdev_lpyt' exists
+  group:
+    name: "vwdev_lpyt"
+    state: present
+  tags: [vwdev_lpyt-sudoers, system_preparation]
+
+- name: Deploy sudoers template for 'vwdev_lpyt'
+  template:
+    src: "vwdev_lpyt.j2"
+    dest: "/etc/sudoers.d/vwdev_lpyt"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  tags: [vwdev_lpyt-sudoers, system_preparation]
+
+

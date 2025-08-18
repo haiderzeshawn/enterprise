@@ -1,0 +1,47 @@
+chain input {
+    type filter hook input priority 0; policy drop;
+    
+    # Base rules - always present
+    log prefix "ALLOW established/related: " flags all
+    ct state established,related accept comment "Allow established/related"
+    
+    log prefix "ALLOW loopback: " flags all
+    iif lo accept comment "Allow loopback"
+    
+    log prefix "ALLOW ICMP: " flags all
+    ip protocol icmp accept comment "Allow ping"
+{% for service_name, service_config in nft_services.items() %}
+{% if service_config.enabled | default(false) %}
+
+    # {{ service_config.description }} rules
+    log prefix "{{ service_config.log_prefix }}: " flags all
+{% if service_config.protocol == "all" %}
+    ip saddr @{{ service_config.set_name }} accept comment "{{ service_config.description }}"
+{% elif service_config.ports | length == 0 %}
+    ip saddr @{{ service_config.set_name }} accept comment "{{ service_config.description }}"
+{% elif service_config.ports | length == 1 %}
+    ip saddr @{{ service_config.set_name }} {{ service_config.protocol }} dport {{ service_config.ports[0] }} accept comment "{{ service_config.description }}"
+{% elif service_config.ports | length > 1 %}
+    ip saddr @{{ service_config.set_name }} {{ service_config.protocol }} dport { {{ service_config.ports | join(', ') }} } accept comment "{{ service_config.description }}"
+{% endif %}
+{% if service_config.drop_others | default(false) %}
+    log prefix "{{ service_config.drop_log_prefix }}: " flags all
+{% for port in service_config.ports %}
+    {{ service_config.protocol }} dport {{ port }} drop comment "Drop other {{ service_config.description }}"
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% for port_set_name, port_set_config in nft_port_sets.items() %}
+{% if port_set_config.enabled | default(false) %}
+
+    # {{ port_set_config.description }} rules
+    log prefix "{{ port_set_config.log_prefix }}: " flags all
+    {{ port_set_config.protocol }} dport @{{ port_set_config.set_name }} accept comment "{{ port_set_config.description }}"
+{% endif %}
+{% endfor %}
+
+    # Final catch-all
+    counter log prefix "NFT_INPUT_DROP: " flags all drop comment "Drop all other traffic"
+}
+

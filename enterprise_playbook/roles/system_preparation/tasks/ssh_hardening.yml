@@ -1,0 +1,46 @@
+- name: Harden SSH configuration
+  block:
+    - name: Backup existing sshd_config
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config
+        dest: /etc/ssh/sshd_config.bak
+        remote_src: yes
+        mode: '0600'
+      tags: [ssh, ssh_hardening, system_preparation]
+
+    - name: Apply hardened SSH configuration
+      ansible.builtin.template:
+        src: templates/sshd_config_hardened.j2
+        dest: /etc/ssh/sshd_config
+        mode: '0600'
+        owner: root
+        group: root
+      register: sshd_config_result
+      tags: [ssh, ssh_hardening, system_preparation]
+
+    - name: Validate sshd_config syntax
+      ansible.builtin.command: /usr/sbin/sshd -t
+      register: sshd_syntax_check
+      ignore_errors: true
+      changed_when: false
+      tags: [ssh, ssh_hardening, system_preparation]
+
+    - name: Restore backup if sshd_config is invalid
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config.bak
+        dest: /etc/ssh/sshd_config
+        remote_src: yes
+        mode: '0600'
+      when: sshd_syntax_check.rc != 0
+      notify: Restart SSH
+      tags: [ssh, ssh_hardening, system_preparation]
+
+    - name: Restart SSH if config valid and updated
+      ansible.builtin.service:
+        name: "{{ 'sshd' if ansible_facts['os_family'] in ['RedHat', 'Suse'] else 'ssh' }}"
+        state: restarted
+      when: sshd_config_result.changed and sshd_syntax_check.rc == 0
+      tags: [ssh, ssh_hardening, system_preparation]
+
+  tags: [ssh, ssh_hardening, system_preparation]
+

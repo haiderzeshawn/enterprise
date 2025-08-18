@@ -1,0 +1,19 @@
+---
+- name: Ensure group for log access exists
+  group:
+    name: "all-users-allowlogsaccess"
+    state: present
+  tags: [allow-logs-access, system_preparation]
+
+- name: Deploy sudoers rule for log access
+  template:
+    src: allow_logs_access.j2
+    dest: /etc/sudoers.d/all-users-allowlogsaccess
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  vars:
+    allow_group: "all-users-allowlogsaccess"
+  tags: [allow-logs-access, system_preparation]
+

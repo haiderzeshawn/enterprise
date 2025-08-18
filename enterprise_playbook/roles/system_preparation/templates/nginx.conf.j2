@@ -1,0 +1,69 @@
+# templates/nginx.conf.j2
+user {{ webserver_user }};
+worker_processes auto;
+error_log /var/log/nginx/error.log notice;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+    multi_accept on;
+}
+
+http {
+    # === LOG FORMAT DEFINITIONS ===
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    log_format main_logs '$remote_addr - $remote_user [$time_local] '
+                         '"$request" $status $body_bytes_sent '
+                         '"$http_referer" "$http_user_agent" '
+                         'rt=$request_time ua="$upstream_addr" '
+                         'us="$upstream_status" ut="$upstream_response_time" '
+                         'sc="$scheme" host="$host" '
+                         'xff="$http_x_forwarded_for" '
+                         'cookie="$http_cookie" '
+                         'req_len=$request_length resp_len=$bytes_sent';
+
+    log_format proxy_logs '$remote_addr - $remote_user [$time_local] '
+                          '"$request" $status $body_bytes_sent '
+                          '"$http_referer" "$http_user_agent" '
+                          'ua="$upstream_addr" us="$upstream_status" ut="$upstream_response_time"';
+
+    access_log /var/log/nginx/access.log main;
+    
+    # Basic Settings
+    keepalive_timeout 65;
+    sendfile on;
+    tcp_nopush on;
+    types_hash_max_size 2048;
+    server_tokens off;
+    
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    ##
+    # SSL Settings
+    ##
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+
+    ##
+    # Gzip Settings
+    ##
+    gzip on;
+    client_max_body_size 100M;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_buffers 16 8k;
+    gzip_http_version 1.1;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    ##
+    # Virtual Host Configs
+    ##
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}

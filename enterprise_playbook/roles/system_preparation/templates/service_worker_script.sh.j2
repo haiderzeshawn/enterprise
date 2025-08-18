@@ -1,0 +1,3 @@
+#!/bin/bash
+exec -a "dw-{{ item.service_host_name }}" /usr/bin/dotnet {{ item.service_worker_working_dir }}/{{ item.service_worker_dll }} "$@"
+

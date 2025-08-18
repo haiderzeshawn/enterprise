@@ -1,0 +1,89 @@
+---
+# Debian/Ubuntu Setup
+- name: Ensure dependencies installed (Debian/Ubuntu)
+  apt:
+    name: [ "wget", "gnupg", "apt-transport-https", "git" ]
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+  tags: [install_dotnet, system_preparation]
+
+- name: Add Microsoft GPG key (Debian/Ubuntu)
+  apt_key:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    state: present
+  when: ansible_os_family == "Debian"
+  tags: [install_dotnet, system_preparation]
+
+- name: Add Microsoft repository (Debian/Ubuntu)
+  apt_repository:
+    repo: "deb [arch=amd64] https://packages.microsoft.com/debian/12/prod bookworm main"
+    state: present
+    filename: "microsoft-prod"
+  when: ansible_os_family == "Debian"
+  tags: [install_dotnet, system_preparation]
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+  tags: [install_dotnet, system_preparation]
+
+# RHEL/CentOS/Oracle Setup
+- name: Ensure dependencies installed (RHEL/CentOS/Oracle)
+  yum:
+    name: [ "wget", "gnupg2", "git" ]
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags: [install_dotnet, system_preparation]
+
+- name: Add Microsoft YUM repo (RHEL/CentOS/Oracle)
+  get_url:
+    url: https://packages.microsoft.com/config/centos/7/prod.repo
+    dest: /etc/yum.repos.d/microsoft-prod.repo
+    mode: '0644'
+  when: ansible_os_family == "RedHat"
+  tags: [install_dotnet, system_preparation]
+
+- name: Import Microsoft GPG key (RHEL/CentOS/Oracle)
+  rpm_key:
+    key: https://packages.microsoft.com/keys/microsoft.asc
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags: [install_dotnet, system_preparation]
+
+- name: Update YUM cache
+  yum:
+    update_cache: yes
+  when: ansible_os_family == "RedHat"
+  tags: [install_dotnet, system_preparation]
+
+# Common Step - Check installed SDKs
+- name: Check installed .NET SDKs
+  command: dotnet --list-sdks
+  register: dotnet_sdks
+  ignore_errors: true
+  changed_when: false
+  tags: [install_dotnet, system_preparation]
+
+# Common Step - Install missing SDKs
+- name: Install missing .NET SDKs (Debian/Ubuntu)
+  apt:
+    name: "dotnet-sdk-{{ item }}"
+    state: present
+  loop: "{{ dotnet_versions }}"
+  when:
+    - ansible_os_family == "Debian"
+    - dotnet_sdks.stdout is not defined or (item not in dotnet_sdks.stdout)
+  tags: [install_dotnet, system_preparation]
+
+- name: Install missing .NET SDKs (RHEL/CentOS/Oracle)
+  yum:
+    name: "dotnet-sdk-{{ item }}"
+    state: present
+  loop: "{{ dotnet_versions }}"
+  when:
+    - ansible_os_family == "RedHat"
+    - dotnet_sdks.stdout is not defined or (item not in dotnet_sdks.stdout)
+  tags: [install_dotnet, system_preparation]
+

@@ -1,0 +1,54 @@
+# Sudo permissions for log access and system monitoring - {{ allow_group }}
+%{{ allow_group }} ALL=(ALL) NOPASSWD: \
+  /usr/bin/systemctl status *, \
+  /usr/bin/journalctl --priority=info, \
+  /usr/bin/journalctl --priority=debug, \
+  /usr/bin/journalctl --no-pager, \
+  /usr/bin/journalctl -f, \
+  /usr/bin/journalctl -n *, \
+  /usr/bin/journalctl --since *, \
+  /usr/bin/tail -f /var/log/nginx/*, \
+  /usr/bin/tail -f /var/log/apache2/*, \
+  /usr/bin/tail -f /mysql*, \
+  /usr/bin/tail -f /var/log/*, \
+  /usr/bin/tail -f /var/log/php-fpm/*, \
+  /usr/bin/tail -n * /var/log/*, \
+  /usr/bin/tail -f /var/log/syslog, \
+  /usr/bin/tail -f /var/log/kern.log, \
+  /usr/bin/tail -f /var/log/auth.log, \
+  /usr/bin/tail -f /var/log/messages, \
+  /usr/bin/tail -f /var/log/dmesg, \
+  /usr/bin/tail -n * /var/log/syslog, \
+  /usr/bin/tail -n * /var/log/kern.log, \
+  /usr/bin/tail -n * /var/log/auth.log, \
+  /usr/bin/tail -n * /var/log/messages, \
+  /usr/bin/tail -n * /var/log/dmesg, \
+  /usr/bin/less /var/log/*, \
+  /usr/bin/zless /var/log/*.gz, \
+  /usr/bin/less /pgsql-data/*, \
+  /usr/bin/zless /pgsql-data/*.gz, \
+  /usr/bin/less /pgsql-logs/*, \
+  /usr/bin/zless /pgsql-logs/*.gz, \
+  /usr/bin/tail -f /pgsql-data/*, \
+  /usr/bin/tail -n * /pgsql-data/*, \
+  /usr/bin/tail -f /pgsql-logs/*, \
+  /usr/bin/tail -n * /pgsql-logs/*, \
+  /usr/bin/head /pgsql-logs/*, \
+  /usr/bin/zhead /pgsql-logs/*.gz, \
+  /bin/cat /var/log/*, \
+  /bin/df -h, \
+  /usr/bin/du -sh, \
+  /usr/bin/du -h --max-depth=*, \
+  /usr/bin/du -sh /mysql*, \
+  /usr/bin/du -h --max-depth=* /mysql*, \
+  /usr/bin/top -b -n *, \
+  /usr/bin/iostat -b -n *, \
+  /usr/bin/htop, \
+  /usr/bin/free -h, \
+  /usr/bin/vmstat, \
+  /usr/bin/uptime, \
+  /usr/bin/iotop, \
+  /bin/netstat -tulpn, \
+  /usr/bin/ss -tulpn, \
+  /usr/sbin/lsof -i
+

@@ -1,0 +1,21 @@
+---
+- name: "Ensure group 'all-users-denyediting' exists"
+  group:
+    name: "all-users-denyediting"
+    state: present
+  tags:
+    - deny-logs-editing
+    - system_preparation
+
+- name: "Deploy sudoers template to /etc/sudoers.d/all-users-denyeditiong"
+  template:
+    src: "all-users-denyediting.j2"
+    dest: "/etc/sudoers.d/all-users-denyediting"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  tags:
+    - deny-logs-editing
+    - system_preparation
+

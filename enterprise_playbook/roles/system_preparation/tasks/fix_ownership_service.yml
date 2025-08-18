@@ -1,0 +1,70 @@
+---
+#********************** Postgres  Service *****************************#
+
+- name: Ensure fix-ownership PostgreSQL systemd service
+  template:
+    src: fix_postgres_ownership_service.j2
+    dest: /etc/systemd/system/fix-postgres-ownership.service
+    mode: '0644'
+  tags: [fix_postgres_ownership, postgres_ownership_service_setup, system_preparation]
+
+#********************** Mysql Service *****************************#
+
+- name: Ensure fix-ownership MySQL systemd service
+  template:
+    src: fix_mysql_ownership_service.j2
+    dest: /etc/systemd/system/fix-mysql-ownership.service
+    mode: '0644'
+  tags: [fix_mysql_ownership, mysql_ownership_service_setup, system_preparation]
+
+#********************** Nginx & Dotnet Service *****************************#
+
+- name: Ensure fix-ownership ldnet NGINX systemd service
+  template:
+    src: fix_nginx_dnet_ownership_service.j2
+    dest: /etc/systemd/system/fix-nginx-dnet-ownership.service
+    mode: '0644'
+  tags: [fix_nginx_dnet_ownership, nginx_dnet_ownership_service_setup, system_preparation]
+
+#********************** Nginx & Python Service *****************************#
+
+- name: Ensure fix-ownership python NGINX systemd service
+  template:
+    src: fix_nginx_pyt_ownership_service.j2
+    dest: /etc/systemd/system/fix-nginx-pyt-ownership.service
+    mode: '0644'
+  tags: [fix_nginx_pyt_ownership, nginx_pyt_ownership_service_setup, system_preparation]
+
+- name: Reload systemd to recognize new services
+  systemd:
+    daemon_reload: true
+  tags: [daemon_reload_man]
+
+- name: Enable and start PostgreSQL ownership fix service
+  systemd:
+    name: fix-postgres-ownership.service
+    enabled: true
+    state: fix_postgres_ownership
+  tags: [fix_postgres_ownership, postgres_ownership_service_setup, system_preparation]
+
+- name: Enable and start MySQL ownership fix service
+  systemd:
+    name: fix-mysql-ownership.service
+    enabled: true
+    state: started
+  tags: [fix_mysql_ownership, mysql_ownership_service_setup, system_preparation]
+
+- name: Enable and start dnet ownership fix service
+  systemd:
+    name: fix-nginx-dnet-ownership.service
+    enabled: true
+    state: started
+  tags: [fix_nginx_dnet_ownership, nginx_dnet_ownership_service_setup, system_preparation]
+
+- name: Enable and start python ownership fix service
+  systemd:
+    name: fix-nginx-pyt-ownership.service
+    enabled: true
+    state: started
+  tags: [fix_nginx_pyt_ownership, nginx_pyt_ownership_service_setup, system_preparation]
+

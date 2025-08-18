@@ -1,0 +1,79 @@
+# Rsync
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/rsync * /etc/nagios/*, /usr/bin/rsync * /etc/telegraf/*, /usr/bin/rsync * /etc/promtail/*, /usr/bin/rsync * /usr/lib/nagios/*, /usr/bin/rsync * /usr/local/nagios/*
+
+# rm
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/rm -rf /etc/nagios/*, /bin/rm -rf /etc/telegraf/*, /bin/rm -rf /etc/promtail/*, /bin/rm -rf /usr/lib/nagios/*, /bin/rm -rf /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/rm -f /etc/nagios/*, /bin/rm -f /etc/telegraf/*, /bin/rm -f /etc/promtail/*, /bin/rm -f /usr/lib/nagios/*, /bin/rm -f /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/rm -r /etc/nagios/*, /bin/rm -r /etc/telegraf/*, /bin/rm -r /etc/promtail/*, /bin/rm -r /usr/lib/nagios/*, /bin/rm -r /usr/local/nagios/*
+
+# chmod/chown
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chmod * /etc/nagios/*, /bin/chmod -R * /etc/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chmod * /etc/telegraf/*, /bin/chmod -R * /etc/telegraf/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chmod * /etc/promtail/*, /bin/chmod -R * /etc/promtail/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chmod * /usr/lib/nagios/*, /bin/chmod -R * /usr/lib/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chmod * /usr/local/nagios/*, /bin/chmod -R * /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chown * /etc/nagios/*, /bin/chown -R * /etc/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chown * /etc/telegraf/*, /bin/chown -R * /etc/telegraf/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chown * /etc/promtail/*, /bin/chown -R * /etc/promtail/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chown * /usr/lib/nagios/*, /bin/chown -R * /usr/lib/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/chown * /usr/local/nagios/*, /bin/chown -R * /usr/local/nagios/*
+
+# unzip / zip
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/unzip * -d /etc/nagios/*, /usr/bin/unzip * -d /etc/telegraf/*, /usr/bin/unzip * -d /etc/promtail/*, /usr/bin/unzip * -d /usr/lib/nagios/*, /usr/bin/unzip * -d /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/zip -r * /etc/nagios/*, /usr/bin/zip -r * /etc/telegraf/*, /usr/bin/zip -r * /etc/promtail/*, /usr/bin/zip -r * /usr/lib/nagios/*, /usr/bin/zip -r * /usr/local/nagios/*
+
+# tar
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/tar -xzf * -C /etc/nagios/*, /usr/bin/tar -xzf * -C /etc/telegraf/*, /usr/bin/tar -xzf * -C /etc/promtail/*, /usr/bin/tar -xzf * -C /usr/lib/nagios/*, /usr/bin/tar -xzf * -C /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/tar -czf * /etc/nagios/*, /usr/bin/tar -czf * /etc/telegraf/*, /usr/bin/tar -czf * /etc/promtail/*, /usr/bin/tar -czf * /usr/lib/nagios/*, /usr/bin/tar -czf * /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/tar -xf * -C /etc/nagios/*, /usr/bin/tar -xf * -C /etc/telegraf/*, /usr/bin/tar -xf * -C /etc/promtail/*, /usr/bin/tar -xf * -C /usr/lib/nagios/*, /usr/bin/tar -xf * -C /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/tar -cf * /etc/nagios/*, /usr/bin/tar -cf * /etc/telegraf/*, /usr/bin/tar -cf * /etc/promtail/*, /usr/bin/tar -cf * /usr/lib/nagios/*, /usr/bin/tar -cf * /usr/local/nagios/*
+
+# mkdir
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/mkdir -p /etc/nagios/*, /bin/mkdir -p /etc/telegraf/*, /bin/mkdir -p /etc/promtail/*, /bin/mkdir -p /usr/lib/nagios/*, /bin/mkdir -p /usr/local/nagios/*
+
+# editors
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/vim /etc/nagios/*, /usr/bin/vim /etc/telegraf/*, /usr/bin/vim /etc/promtail/*, /usr/bin/vim /usr/lib/nagios/*, /usr/bin/vim /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/vi /etc/nagios/*, /usr/bin/vi /etc/telegraf/*, /usr/bin/vi /etc/promtail/*, /usr/bin/vi /usr/lib/nagios/*, /usr/bin/vi /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/nano /etc/nagios/*, /usr/bin/nano /etc/telegraf/*, /usr/bin/nano /etc/promtail/*, /usr/bin/nano /usr/lib/nagios/*, /usr/bin/nano /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/vi /etc/nagios/*, /bin/vi /etc/telegraf/*, /bin/vi /etc/promtail/*, /bin/vi /usr/lib/nagios/*, /bin/vi /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/nano /etc/nagios/*, /bin/nano /etc/telegraf/*, /bin/nano /etc/promtail/*, /bin/nano /usr/lib/nagios/*, /bin/nano /usr/local/nagios/*
+
+# touch
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/touch /etc/nagios/*, /usr/bin/touch /etc/telegraf/*, /usr/bin/touch /etc/promtail/*, /usr/bin/touch /usr/lib/nagios/*, /usr/bin/touch /usr/local/nagios/*
+
+# cp/mv/scp
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/cp * /etc/nagios/*, /bin/cp * /etc/telegraf/*, /bin/cp * /etc/promtail/*, /bin/cp * /usr/lib/nagios/*, /bin/cp * /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/cp * /etc/nagios/*, /usr/bin/cp * /etc/telegraf/*, /usr/bin/cp * /etc/promtail/*, /usr/bin/cp * /usr/lib/nagios/*, /usr/bin/cp * /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/mv * /etc/nagios/*, /bin/mv * /etc/telegraf/*, /bin/mv * /etc/promtail/*, /bin/mv * /usr/lib/nagios/*, /bin/mv * /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/mv * /etc/nagios/*, /usr/bin/mv * /etc/telegraf/*, /usr/bin/mv * /etc/promtail/*, /usr/bin/mv * /usr/lib/nagios/*, /usr/bin/mv * /usr/local/nagios/*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/bin/scp * /etc/nagios/*, /usr/bin/scp * /etc/telegraf/*, /usr/bin/scp * /etc/promtail/*, /usr/bin/scp * /usr/lib/nagios/*, /usr/bin/scp * /usr/local/nagios/*
+
+# Rules for service commands
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl status promtail*, /usr/bin/systemctl status promtail*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl stop promtail*, /usr/bin/systemctl stop promtail*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl start promtail*, /usr/bin/systemctl start promtail*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl reload promtail*, /usr/bin/systemctl reload promtail*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl restart promtail*, /usr/bin/systemctl restart promtail*
+
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl status nagios-nrpe-server*, /usr/bin/systemctl status nagios-nrpe-server*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl stop nagios-nrpe-server*, /usr/bin/systemctl stop nagios-nrpe-server*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl start nagios-nrpe-server*, /usr/bin/systemctl start nagios-nrpe-server*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl reload nagios-nrpe-server*, /usr/bin/systemctl reload nagios-nrpe-server*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl restart nagios-nrpe-server*, /usr/bin/systemctl restart nagios-nrpe-server*
+
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl status node_exporter*, /usr/bin/systemctl status node_exporter*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl stop node_exporter*, /usr/bin/systemctl stop node_exporter*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl start node_exporter*, /usr/bin/systemctl start node_exporter*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl reload node_exporter*, /usr/bin/systemctl reload node_exporter*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl restart node_exporter*, /usr/bin/systemctl restart node_exporter*
+
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl status telegraf*, /usr/bin/systemctl status telegraf*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl stop telegraf*, /usr/bin/systemctl stop telegraf*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl start telegraf*, /usr/bin/systemctl start telegraf*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl reload telegraf*, /usr/bin/systemctl reload telegraf*
+%vwtac_ltac ALL=(ALL) NOPASSWD: /bin/systemctl restart telegraf*, /usr/bin/systemctl restart telegraf*
+
+# Rules for executing specific binaries
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/local/bin/node_exporter
+%vwtac_ltac ALL=(ALL) NOPASSWD: /usr/local/bin/promtail
+

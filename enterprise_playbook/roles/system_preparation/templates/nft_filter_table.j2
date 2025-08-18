@@ -1,0 +1,22 @@
+table inet filter {
+    
+    # Include all IP sets for enabled services that have source IPs
+{% for service_name, service_config in nft_services.items() %}
+{% if service_config.enabled | default(false) and service_config.source_ips is defined and service_config.source_ips | length > 0 %}
+    include "/etc/nftables/sets/{{ service_config.set_file }}.nft"
+{% endif %}
+{% endfor %}
+
+    # Include all port sets for global access that have ports defined
+{% for port_set_name, port_set_config in nft_port_sets.items() %}
+{% if port_set_config.enabled | default(false) and port_set_config.ports is defined and port_set_config.ports | length > 0 %}
+    include "/etc/nftables/sets/{{ port_set_config.set_file }}.nft"
+{% endif %}
+{% endfor %}
+    
+    # Include all chain rules
+    include "/etc/nftables/rules/input_chain.nft"
+    include "/etc/nftables/rules/forward_chain.nft"
+    include "/etc/nftables/rules/output_chain.nft"
+}
+

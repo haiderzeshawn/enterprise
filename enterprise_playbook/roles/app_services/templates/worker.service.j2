@@ -1,0 +1,19 @@
+[Unit]
+Description=US Staging - {{ service_host_name }}
+After=network.target
+
+[Service]
+WorkingDirectory={{ deployment_base_dir }}/{{ service_host_url }}/Worker/Stable_Runing
+ExecStart={{ service_script_base_dir }}/{{ service_host_url }}/run-worker-{{ service_host_name }}.sh
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier={{ service_host_name }}-worker
+User=nginx
+Group=nginx
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,3 @@
+#!/bin/bash
+exec -a "da-{{ item.service_host_name }}" /usr/bin/dotnet {{ item.service_app_working_dir }}/{{ item.service_app_dll }} "$@"
+

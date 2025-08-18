@@ -1,0 +1,124 @@
+---
+- name: Ensure backup directory exists (remote)
+  file:
+    path: "{{ backup_config.backup_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+  when: user_management.ssh_config.backup_sshd_config | bool
+  tags: [user_mgmt, sshd_backups, sshd_allowusers]
+
+- name: Backup sshd_config with timestamp (remote)
+  copy:
+    src: "{{ user_management.ssh_config.sshd_config_path }}"
+    dest: "{{ backup_config.backup_path }}/sshd_config-{{ ansible_date_time.iso8601_basic_short }}"
+    remote_src: true
+    mode: '0600'
+  when: user_management.ssh_config.backup_sshd_config | bool
+  tags: [user_mgmt, sshd_backups, sshd_allowusers]
+
+- name: Cleanup backups older than retention_days
+  find:
+    paths: "{{ backup_config.backup_path }}"
+    patterns: "sshd_config-*"
+    age: "{{ user_management.ssh_config.backup_retention_days }}d"
+    age_stamp: mtime
+  register: old_backups
+  when: user_management.ssh_config.cleanup_old_backups | bool
+  tags: [user_mgmt, sshd_backups]
+
+- name: Remove old backups by age
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_backups.files | default([]) }}"
+  when: user_management.ssh_config.cleanup_old_backups | bool
+  tags: [user_mgmt, sshd_backups]
+
+- name: Enforce max_backup_files (keep newest N)
+  find:
+    paths: "{{ backup_config.backup_path }}"
+    patterns: "sshd_config-*"
+  register: all_backups
+  when: user_management.ssh_config.cleanup_old_backups | bool
+  tags: [user_mgmt, sshd_backups]
+
+- name: Compute backups to remove beyond max
+  set_fact:
+    backups_to_remove: >-
+      {{
+        (all_backups.files | sort(attribute='mtime', reverse=true))
+        [ user_management.ssh_config.max_backup_files | int : ]
+      }}
+  when:
+    - user_management.ssh_config.cleanup_old_backups | bool
+    - (all_backups.files | length) > (user_management.ssh_config.max_backup_files | int)
+  tags: [user_mgmt, sshd_backups]
+
+- name: Remove excess backups
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ backups_to_remove | default([]) }}"
+  when: user_management.ssh_config.cleanup_old_backups | bool
+  tags: [user_mgmt, sshd_backups]
+
+# ----- AllowUsers handling -----
+
+- name: Check for uncommented AllowUsers line
+  command: "grep -E '^[[:space:]]*AllowUsers[[:space:]]+' {{ user_management.ssh_config.sshd_config_path }}"
+  register: allowusers_grep
+  changed_when: false
+  failed_when: false
+  when: user_management.ssh_config.check_allow_users | bool
+  tags: [user_mgmt, sshd_allowusers]
+
+- name: Set flag for AllowUsers presence
+  set_fact:
+    allowusers_present: "{{ allowusers_grep.rc == 0 }}"
+  when: user_management.ssh_config.check_allow_users | bool
+  tags: [user_mgmt, sshd_allowusers]
+
+- name: Warn if AllowUsers not present or commented
+  debug:
+    msg: "AllowUsers not found (or commented) in {{ user_management.ssh_config.sshd_config_path }} on {{ inventory_hostname }} — not modifying sshd_config."
+  when:
+    - user_management.ssh_config.check_allow_users | bool
+    - not allowusers_present
+  tags: [user_mgmt, sshd_allowusers]
+
+- name: Extract current AllowUsers entries
+  set_fact:
+    current_allowusers: "{{ (allowusers_grep.stdout | regex_replace('^\\s*AllowUsers\\s+', '')) | trim | split() }}"
+  when:
+    - user_management.ssh_config.check_allow_users | bool
+    - allowusers_present
+  tags: [user_mgmt, sshd_allowusers]
+
+- name: Compute users needing SSH access
+  set_fact:
+    host_ssh_users: >-
+      {{
+        (host_user_items | default([]))
+        | selectattr('value.enabled','defined') | selectattr('value.enabled')
+        | selectattr('value.ssh_access','defined') | selectattr('value.ssh_access')
+        | map(attribute='key') | list | unique
+      }}
+  when:
+    - user_management.ssh_config.check_allow_users | bool
+    - allowusers_present
+  tags: [user_mgmt, sshd_allowusers]
+
+- name: Update AllowUsers (union, no duplicates)
+  lineinfile:
+    path: "{{ user_management.ssh_config.sshd_config_path }}"
+    regexp: '^\s*AllowUsers\s+'
+    line: "AllowUsers {{ (current_allowusers + host_ssh_users) | unique | join(' ') }}"
+    backup: "{{ ssh_config.backup_configs | bool }}"
+  notify: reload sshd
+  when:
+    - user_management.ssh_config.check_allow_users | bool
+    - allowusers_present
+  tags: [user_mgmt, sshd_allowusers]
+

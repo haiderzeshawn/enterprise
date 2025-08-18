@@ -1,0 +1,86 @@
+# Certbot-managed SSL configuration - Python Service
+server {
+    server_name {{ item.service_host_url }};
+
+    # Include ACME challenge
+    include /etc/nginx/snippets/acme-challenge.conf;
+
+    listen 443 ssl; # managed by Certbot
+
+    ssl_certificate /etc/letsencrypt/live/{{ item.service_host_url }}/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/{{ item.service_host_url }}/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+    # Logging
+    access_log /var/log/nginx/{{ item.service_host_url }}.main.log main_logs;
+    access_log /var/log/nginx/{{ item.service_host_url }}.proxy.log proxy_logs;
+    error_log /var/log/nginx/{{ item.service_host_url }}.error.log warn;
+
+    # Client settings optimized for Python applications
+    client_max_body_size 50M;
+    client_body_buffer_size 128k;
+    client_header_buffer_size 4k;
+    large_client_header_buffers 4 8k;
+    client_body_timeout 20s;
+    client_header_timeout 20s;
+    send_timeout 20s;
+
+    # Health check endpoint
+    location /health {
+        proxy_pass http://{{ item.service_hostname }};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # Quick health check timeouts
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 5s;
+        proxy_read_timeout 5s;
+
+        access_log off;
+    }
+
+    # Main application using upstream
+    location / {
+        proxy_pass http://{{ item.service_hostname }};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        
+        # Strict 20-second timeouts - NO request longer than 20s
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 20s;
+        proxy_read_timeout 20s;
+
+        # Buffer settings for performance
+        proxy_buffering on;
+        proxy_buffer_size 8k;
+        proxy_buffers 16 8k;
+        proxy_busy_buffers_size 16k;
+
+        # Handle stuck processes - auto failover
+        proxy_next_upstream error timeout http_502 http_503 http_504;
+        proxy_next_upstream_timeout 20s;
+        proxy_next_upstream_tries 2;
+
+        proxy_redirect off;
+    }
+}
+
+server {
+    if ($host = {{ item.service_host_url }}) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name {{ item.service_host_url }};
+    return 404; # managed by Certbot
+}
+

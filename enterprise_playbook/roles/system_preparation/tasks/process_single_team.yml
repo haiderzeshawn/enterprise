@@ -1,0 +1,113 @@
+---
+# tasks/process_single_team.yml - Process a single team's users with SSH key support
+- name: "Generate passwords for {{ current_team }} team users"
+  set_fact:
+    team_passwords: "{{ team_passwords | default({}) | combine({user_item.key: lookup('password', '/dev/null chars=ascii_letters,digits,punctuation length=16')}) }}"
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when:
+    - user_item.value.enabled | default(false)
+    - user_item.value.generate_password | default(false)
+    - user_item.value.password == ""
+  delegate_to: localhost
+  run_once: true
+  no_log: true
+  tags:
+    - users
+    - team_users
+    - user_passwords
+
+- name: "Create credential files for {{ current_team }} team users"
+  template:
+    src: team_user_credentials.j2
+    dest: "{{ user_management.creds_directory }}/{{ current_team }}/{{ user_item.key }}_credentials.txt"
+    mode: '0600'
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when: user_item.value.enabled | default(false)
+  delegate_to: localhost
+  vars:
+    team_name: "{{ current_team }}"
+    user_key: "{{ user_item.key }}"
+    user_config: "{{ user_item.value }}"
+    team_config: "{{ team_users[current_team] }}"
+    user_password: "{{ team_passwords[user_item.key] | default(user_item.value.password) }}"
+    ssh_key_pem_path: "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.pem"
+    ssh_key_ppk_path: "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.ppk"
+    ssh_key_pub_path: "{{ user_management.ssh_keys_directory }}/{{ user_item.key }}_{{ inventory_hostname }}.pub"
+  tags:
+    - users
+    - team_users
+    - user_creds
+
+- name: "Create groups for {{ current_team }} team"
+  group:
+    name: "{{ group_name }}"
+    state: present
+  loop: "{{ team_inventory_mapping[current_team].default_groups }}"
+  loop_control:
+    loop_var: group_name
+  tags:
+    - users
+    - team_users
+    - user_groups
+
+- name: "Create primary groups for {{ current_team }} team users"
+  group:
+    name: "{{ user_item.value.primary_group | default('users') }}"
+    state: present
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when: user_item.value.enabled | default(false)
+  tags:
+    - users
+    - team_users
+    - user_groups
+
+- name: "Create additional groups for {{ current_team }} team users"
+  group:
+    name: "{{ group_name }}"
+    state: present
+  loop: "{{ team_users[current_team].users.values() | map(attribute='additional_groups') | list | flatten | unique }}"
+  loop_control:
+    loop_var: group_name
+  when: group_name != ""
+  tags:
+    - users
+    - team_users
+    - user_groups
+
+- name: "Create users for {{ current_team }} team"
+  user:
+    name: "{{ user_item.key }}"
+    comment: "{{ user_item.value.comment | default(user_item.value.full_name) }} ({{ team_users[current_team].team_description }})"
+    shell: "{{ user_item.value.shell | default('/bin/bash') }}"
+    home: "{{ '/home/' + user_item.key if user_item.value.create_home | default(true) else omit }}"
+    create_home: "{{ user_item.value.create_home | default(true) }}"
+    group: "{{ user_item.value.primary_group | default('users') }}"
+    groups: "{{ (team_inventory_mapping[current_team].default_groups + user_item.value.additional_groups | default([])) | join(',') }}"
+    append: yes
+    password: "{{ (team_passwords[user_item.key] | default(user_item.value.password) | password_hash('sha512')) if (team_passwords[user_item.key] is defined or user_item.value.password != '') else '!' }}"
+    password_expire_max: "{{ -1 if not (user_item.value.password_expire | default(false)) else omit }}"
+    state: present
+  loop: "{{ team_users[current_team].users | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  when: user_item.value.enabled | default(false)
+  no_log: true
+  tags:
+    - users
+    - team_users
+    - user_creation
+
+- name: "Display {{ current_team }} team summary"
+  debug:
+    msg: |
+      ✅ Processed Team: {{ current_team }}
+      📝 Description: {{ team_users[current_team].team_description }}
+      👥 Users Created: {{ team_users[current_team].users | dict2items | selectattr('value.enabled') | map(attribute='key') | list | join(', ') }}
+      🔐 SSH Users: {{ team_users[current_team].users | dict2items | selectattr('value.enabled') | selectattr('value.ssh_access', 'defined') | selectattr('value.ssh_access') | map(attribute='key')
+

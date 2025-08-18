@@ -1,0 +1,16 @@
+[Unit]
+Description=Auto-chown new files in {{ pg_db_directories | join(', ') }} to {{ mysql_user }}
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /usr/local/bin/vw-scripts/fix-mysql-ownership-script.sh
+Restart=always
+RestartSec=5s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=fix-mysql-ownership
+
+[Install]
+WantedBy=multi-user.target
+

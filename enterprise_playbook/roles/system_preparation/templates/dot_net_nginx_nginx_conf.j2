@@ -1,0 +1,83 @@
+user {{ webserver_user }};
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 1024;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+    # Basic Settings
+    sendfile on;
+    tcp_nopush on;
+    types_hash_max_size 2048;
+    server_tokens off;
+    
+    # Timeouts
+    keepalive_timeout 65;
+    client_max_body_size 100M;
+    client_body_timeout 60;
+    client_header_timeout 60;
+    send_timeout 60;
+    
+    # MIME Types
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    
+    # Gzip Settings
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/atom+xml image/svg+xml;
+    
+    # === COMPREHENSIVE LOG FORMAT DEFINITIONS ===
+    log_format main_nginx '$remote_addr - $remote_user [$time_local] '
+                          '"$request" $status $body_bytes_sent '
+                          '"$http_referer" "$http_user_agent" "$limit_req_status" '
+                          '"CF-Client-IP:$http_cf_connecting_ip" "Server-Saw-IP:$remote_addr" "$host" '
+                          'rt=$request_time uct=$upstream_connect_time uht=$upstream_header_time urt=$upstream_response_time '
+                          'ssl_protocol="$ssl_protocol" ssl_cipher="$ssl_cipher" '
+                          'request_id=$request_id gzip_ratio=$gzip_ratio '
+                          'ua="$upstream_addr" us="$upstream_status" '
+                          'sc="$scheme" xff="$http_x_forwarded_for" '
+                          'cookie="$http_cookie" req_len=$request_length resp_len=$bytes_sent';
+
+    log_format sites_logs '$remote_addr - $remote_user [$time_local] '
+                          '"$request" $status $body_bytes_sent '
+                          '"$http_referer" "$http_user_agent" "$limit_req_status" '
+                          '"CF-Client-IP:$http_cf_connecting_ip" "Server-Saw-IP:$remote_addr" "$host" '
+                          'rt=$request_time ua="$upstream_addr" '
+                          'us="$upstream_status" ut="$upstream_response_time" '
+                          'uct=$upstream_connect_time uht=$upstream_header_time '
+                          'sc="$scheme" host="$host" '
+                          'xff="$http_x_forwarded_for" '
+                          'cookie="$http_cookie" '
+                          'req_len=$request_length resp_len=$bytes_sent '
+                          'ssl_protocol="$ssl_protocol" ssl_cipher="$ssl_cipher" '
+                          'request_id=$request_id gzip_ratio=$gzip_ratio';
+
+    log_format proxy_logs '$remote_addr - $remote_user [$time_local] '
+                          '"$request" $status $body_bytes_sent '
+                          '"$http_referer" "$http_user_agent" "$limit_req_status" '
+                          '"CF-Client-IP:$http_cf_connecting_ip" "Server-Saw-IP:$remote_addr" "$host" '
+                          'rt=$request_time ua="$upstream_addr" us="$upstream_status" ut="$upstream_response_time" '
+                          'uct=$upstream_connect_time uht=$upstream_header_time '
+                          'sc="$scheme" host="$host" '
+                          'xff="$http_x_forwarded_for" '
+                          'req_len=$request_length resp_len=$bytes_sent '
+                          'ssl_protocol="$ssl_protocol" ssl_cipher="$ssl_cipher" '
+                          'request_id=$request_id gzip_ratio=$gzip_ratio';
+    
+    access_log /var/log/nginx/access.log main_nginx;
+    error_log /var/log/nginx/error.log warn;
+    
+    # Include upstream configurations
+    include /etc/nginx/conf.d/*.conf;
+    
+    # Include site configurations
+    include /etc/nginx/sites-enabled/*;
+}

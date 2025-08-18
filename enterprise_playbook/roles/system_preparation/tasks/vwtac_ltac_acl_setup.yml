@@ -1,0 +1,68 @@
+- name: Ensure vwtac_directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ vwtac_directories }}"
+  tags:
+    - vwtac_ltac_acl_implementation
+    - system_preparation
+
+- name: Set ACL rwx recursively on vwtac_directories
+  command: setfacl -R -m g:{{ vwtac_group }}:rwx {{ item }}
+  loop: "{{ vwtac_directories }}"
+  register: acl_dirs
+  failed_when: false
+  ignore_errors: true
+  tags:
+    - vwtac_ltac_acl_implementation
+    - system_preparation
+
+- name: Set default ACL rwx on vwtac_directories (for future files/folders)
+  command: setfacl -dR -m g:{{ vwtac_group }}:rwx {{ item }}
+  loop: "{{ vwtac_directories }}"
+  register: default_acl_dirs
+  failed_when: false
+  ignore_errors: true
+  tags:
+    - vwtac_ltac_acl_implementation
+    - system_preparation
+
+- name: Set ACL rwx on vwtac_files (optional)
+  when: vwtac_files is defined and vwtac_files | length > 0
+  command: setfacl -m g:{{ vwtac_group }}:rwx {{ item }}
+  loop: "{{ vwtac_files }}"
+  register: acl_files
+  failed_when: false
+  ignore_errors: true
+  tags:
+    - vwtac_ltac_acl_implementation
+    - system_preparation
+
+- name: Display results for vwtac_directories ACL set
+  debug:
+    msg: "Directory ACL applied to {{ item.item }}: {{ item.stdout if item.rc == 0 else item.stderr }}"
+  loop: "{{ acl_dirs.results }}"
+  tags:
+    - vwtac_ltac_acl_implementation
+    - system_preparation
+
+- name: Display results for vwtac_directories default ACL set
+  debug:
+    msg: "Default ACL applied to {{ item.item }}: {{ item.stdout if item.rc == 0 else item.stderr }}"
+  loop: "{{ default_acl_dirs.results }}"
+  tags:
+    - vwtac_ltac_acl_implementation
+    - system_preparation
+
+- name: Display results for vwtac_files ACL set
+  when: vwtac_files is defined and vwtac_files | length > 0
+  debug:
+    msg: "File ACL applied to {{ item.item }}: {{ item.stdout if item.rc == 0 else item.stderr }}"
+  loop: "{{ acl_files.results }}"
+  tags:
+    - vwtac_ltac_acl_implementation
+    - system_preparation
+

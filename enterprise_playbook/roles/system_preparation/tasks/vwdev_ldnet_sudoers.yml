@@ -1,0 +1,20 @@
+- name: Ensure group 'vwdev-ldnet' exists
+  group:
+    name: "vwdev-ldnet"
+    state: present
+  tags:
+    - vwdev-ldnet-sudoers
+    - system_preparation
+
+- name: Deploy sudoers template for 'vwdev-ldnet'
+  template:
+    src: "vwdev-ldnet.j2"
+    dest: "/etc/sudoers.d/vwdev-ldnet"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  tags:
+    - vwdev-ldnet-sudoers
+    - system_preparation
+
