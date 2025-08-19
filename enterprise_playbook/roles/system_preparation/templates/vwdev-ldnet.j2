@@ -1,59 +1,132 @@
-# Sudoers rules for vwdev-ldnet group
+# Web Development Team Sudo Permissions
 
-# Rsync
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/rsync * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/rsync * /var/www/engageapp/* *
+# Allow vwdev-ldnet group to run file operations (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/touch /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/touch [A-Za-z0-9_/.-]*
 
-# rm (Remove files)
-%vwdev-ldnet ALL= NOPASSWD: /bin/rm -rf /var/www/engageapp/*, /bin/rm -f /var/www/engageapp/*, /bin/rm -r /var/www/engageapp/*
+# Allow mkdir commands (current directory and /var/www/)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /bin/mkdir -p *, /bin/mkdir *, /bin/mkdir -p /var/www/[a-zA-Z0-9_-]**/**, /bin/mkdir /var/www/[a-zA-Z0-9_-]*/
 
-# chmod/chown (Change file permissions and ownership)
-%vwdev-ldnet ALL= NOPASSWD: /bin/chmod * /var/www/engageapp/*, /bin/chmod -R * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /bin/chown * /var/www/engageapp/*, /bin/chown -R * /var/www/engageapp/*
+# Allow text editors for engageapp files (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/vi /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/nano /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/vim /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/vi [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/nano [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/vim [A-Za-z0-9_/.-]*
 
-# unzip / zip (Archive and unarchive files)
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/unzip * -d /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/zip -r * /var/www/engageapp/*
+# Allow rsync operations for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/rsync * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/rsync /var/www/engageapp/[A-Za-z0-9_/.-]* *, \
+                                 /usr/bin/rsync [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/rsync -av [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/rsync -r [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*
 
-# tar (Archive and unarchive files)
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -xzf * -C /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -czf * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -xf * -C /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/tar -cf * /var/www/engageapp/*
+# Allow file removal operations for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /bin/rm -rf /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/rm -f /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/rm -r /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/rm -rf [A-Za-z0-9_/.-]*, \
+                                 /bin/rm -f [A-Za-z0-9_/.-]*, \
+                                 /bin/rm -r [A-Za-z0-9_/.-]*
 
-# mkdir (Make directories)
-%vwdev-ldnet ALL= NOPASSWD: /bin/mkdir -p /var/www/engageapp/*
+# Allow copy operations for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /bin/cp * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/cp * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/cp [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/cp [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /bin/cp -r [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /bin/cp -R [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*
 
-# Editors (Allow editing files using vi, vim, nano)
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/vim /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/vi /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/nano /var/www/engageapp/*
+# Allow scp operations for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/scp * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/scp [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/scp * [A-Za-z0-9_/.-]*
 
-# touch (Create or modify timestamp of files)
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/touch /var/www/engageapp/*
+# Allow move operations for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /bin/mv * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/mv * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/mv [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/mv [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*
 
-# cp/mv/scp (Copy, move, and secure copy files)
-%vwdev-ldnet ALL= NOPASSWD: /bin/cp * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/cp * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /bin/mv * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/mv * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/scp * /var/www/engageapp/*
+# Allow permission changes for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /bin/chmod * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/chmod -R * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/chmod * [A-Za-z0-9_/.-]*, \
+                                 /bin/chmod -R * [A-Za-z0-9_/.-]*
 
-# Git (Allow git operations within the directory)
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/git * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/git -C /var/www/engageapp/* *
-#%vwdev-ldnet ALL=NOPASSWD: /usr/bin/git * /var/www/engageapp/[A-Za-z0-9_/.-]*
-#%vwdev-ldnet ALL=NOPASSWD: /usr/bin/git -C /var/www/engageapp/[A-Za-z0-9_/.-]* *
+# Allow ownership changes for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /bin/chown * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/chown -R * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /bin/chown * [A-Za-z0-9_/.-]*, \
+                                 /bin/chown -R * [A-Za-z0-9_/.-]*
 
-# Composer (Allow composer operations)
-%vwdev-ldnet ALL= NOPASSWD: /usr/bin/composer * /var/www/engageapp/*
-%vwdev-ldnet ALL= NOPASSWD: /usr/local/bin/composer * /var/www/engageapp/*
+# Allow zip operations for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/zip * -d /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/zip * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/zip [A-Za-z0-9_/.-]* -d [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/zip [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/zip -r [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*
 
-# Dotnet (Allow .NET commands in the directory)
-%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/dotnet publish -c Release -o /var/www/engageapp/*, \
-/usr/bin/dotnet build /var/www/engageapp/*, \
-/usr/bin/dotnet restore /var/www/engageapp/*, \
-/usr/bin/dotnet run /var/www/engageapp/*, \
-/usr/bin/dotnet test /var/www/engageapp/*, \
-/usr/bin/dotnet clean /var/www/engageapp/*, \
-/usr/bin/dotnet pack /var/www/engageapp/*
+# Allow unzip operations for engageapp (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/unzip * -d /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/unzip * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/unzip [A-Za-z0-9_/.-]* -d [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/unzip [A-Za-z0-9_/.-]* [A-Za-z0-9_/.-]*
+
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /bin/systemctl status *, \
+                                  /bin/systemctl restart *, \
+                                  /bin/systemctl start *, \
+                                  /bin/systemctl stop *, \
+                                  /bin/systemctl reload *
+#                                  /bin/systemctl enable *, \
+#                                  /bin/systemctl disable *
+
+# Allow git commands in engageapp directory (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/git * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/git -C /var/www/engageapp/[A-Za-z0-9_/.-]* *, \
+                                 /usr/bin/git [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/git add [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/git commit *, \
+                                 /usr/bin/git push *, \
+                                 /usr/bin/git pull *, \
+                                 /usr/bin/git status, \
+                                 /usr/bin/git log *, \
+                                 /usr/bin/git checkout [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/git branch *, \
+                                 /usr/bin/git merge [A-Za-z0-9_/.-]*
+
+# Allow git commands for webdevs-kphp group (broader permissions)
+%webdevs-kphp ALL=(ALL) NOPASSWD: /usr/bin/git, \
+                                  /usr/bin/git *
+
+# Allow composer commands in engageapp directory (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/composer * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/local/bin/composer * /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/composer install, \
+                                 /usr/bin/composer update, \
+                                 /usr/bin/composer require [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/composer remove [A-Za-z0-9_/.-]*, \
+                                 /usr/bin/composer dump-autoload, \
+                                 /usr/local/bin/composer install, \
+                                 /usr/local/bin/composer update, \
+                                 /usr/local/bin/composer require [A-Za-z0-9_/.-]*, \
+                                 /usr/local/bin/composer remove [A-Za-z0-9_/.-]*, \
+                                 /usr/local/bin/composer dump-autoload
+
+# Allow dotnet commands in engageapp directory (absolute and relative paths)
+%vwdev-ldnet ALL=(ALL) NOPASSWD: /usr/bin/dotnet publish -c Release -o /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/dotnet build /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/dotnet restore /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/dotnet run /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/dotnet test /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/dotnet clean /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/dotnet pack /var/www/engageapp/[A-Za-z0-9_/.-]*, \
+                                 /usr/bin/dotnet build, \
+                                 /usr/bin/dotnet restore, \
+                                 /usr/bin/dotnet run, \
+                                 /usr/bin/dotnet test, \
+                                 /usr/bin/dotnet clean, \
+                                 /usr/bin/dotnet pack, \
+                                 /usr/bin/dotnet publish *
+
