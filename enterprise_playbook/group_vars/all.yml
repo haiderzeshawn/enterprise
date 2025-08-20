@@ -8,6 +8,19 @@ ansible_user_public_key_path: /home/ansible_deployments/.ssh/ansible_deployments
 ssh_service_name: "{{ 'sshd' if ansible_service_mgr == 'systemd' else 'ssh' }}"
 
 fix_services_user: root
+
+#******** NTP and Time Zone Settings ********* ^
+# System timezone configuration
+system_timezone: "Asia/Dubai"  # Change to your desired timezone (e.g., "America/New_York", "Europe/London", "Asia/Tokyo")
+
+# NTP server configuration
+primary_name_server: "10.10.10.10"  # Primary NTP server
+secondary_name_server: "10.10.10.11"  # Secondary NTP server (optional)
+
+# Cron service name per OS family
+cron_service_name: "{{ 'crond' if ansible_os_family == 'RedHat' else 'cron' }}"
+
+
 ###############################################################################################################
 
 # ================================
