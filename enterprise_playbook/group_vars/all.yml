@@ -369,7 +369,7 @@ nginx_sites_enabled: /etc/nginx/sites-enabled
 
 # .NET Applications configuration per host
 dotnet_apps_hosts:
-  "10.10.3.16":
+  "10.10.3.11":
     - service_host_name: mpp-identity
       service_host_url: mpp-identity.mpd.ae
       service_app_working_dir: "{{ deployment_base_dir }}/mpp-identity.mpd.ae/Api/Stable_Running"
@@ -388,96 +388,96 @@ dotnet_apps_hosts:
       ssl_public_ca: false
       ssl_self_signed: true
 
-    - service_host_name: mpp-common
-      service_host_url: mpp-common.mpd.ae
-      service_app_working_dir: "{{ deployment_base_dir }}/mpp-common.mpd.ae/Api/Stable_Running"
-      service_worker_working_dir: "{{ deployment_base_dir }}/mpp-common.mpd.ae/Worker/Stable_Running"
-      service_script_dir: "{{ service_script_base_dir }}/mpp-common.mpd.ae"
-      service_worker_required: false
-      service_worker_dll: []
-      service_app_api_required: true
-      service_app_dll: Com_WebApi.dll
-      service_listen: 0.0.0.0
-      service_port: 5002
-      primary_backend_server: "10.10.3.16"
-      secondary_backend_server: "10.10.3.22"
-      # SSL options per service
-      ssl_certbot: false
-      ssl_public_ca: false
-      ssl_self_signed: true
-
-    - service_host_name: mpp-console
-      service_host_url: mpp-console.mpd.ae
-      service_app_working_dir: "{{ deployment_base_dir }}/mpp-console.mpd.ae/Api/Stable_Running"
-      service_worker_working_dir: "{{ deployment_base_dir }}/mpp-console.mpd.ae/Worker/Stable_Running"
-      service_script_dir: "{{ service_script_base_dir }}/mpp-console.mpd.ae"
-      service_worker_required: false
-      service_worker_dll: []
-      service_app_api_required: true
-      service_app_dll: Con_WebApi.dll
-      service_listen: 0.0.0.0
-      service_port: 5003
-      primary_backend_server: "10.10.3.16"
-      secondary_backend_server: "10.10.3.22"
-      # SSL options per service
-      ssl_certbot: false
-      ssl_public_ca: false
-      ssl_self_signed: true
-
-    - service_host_name: mpp-reporting
-      service_host_url: mpp-reporting.mpd.ae
-      service_app_working_dir: "{{ deployment_base_dir }}/mpp-reporting.mpd.ae/Api/Stable_Running"
-      service_worker_working_dir: "{{ deployment_base_dir }}/mpp-reporting.mpd.ae/Worker/Stable_Running"
-      service_script_dir: "{{ service_script_base_dir }}/mpp-reporting.mpd.ae"
-      service_worker_required: false
-      service_worker_dll: []
-      service_app_api_required: true
-      service_app_dll: Report_WebApi.dll
-      service_listen: 0.0.0.0
-      service_port: 5004
-      primary_backend_server: "10.10.3.16"
-      secondary_backend_server: "10.10.3.22"
-      # SSL options per service
-      ssl_certbot: false
-      ssl_public_ca: false
-      ssl_self_signed: true
-
-  "10.10.3.15":
-    - service_host_name: mail-mpp-engage
-      service_host_url: mail-mpp-engage.mpd.ae
-      service_app_working_dir: "{{ deployment_base_dir }}/mail-mpp-engage.mpd.ae/Api/Stable_Running"
-      service_worker_working_dir: "{{ deployment_base_dir }}/mail-mpp-engage.mpd.ae/Worker/Stable_Running"
-      service_script_dir: "{{ service_script_base_dir }}/mail-mpp-engage.mpd.ae"
-      service_worker_required: true
-      service_worker_dll: Mail_Worker.dll
-      service_app_api_required: true
-      service_app_dll: Mail_WebApi.dll
-      service_listen: 0.0.0.0
-      service_port: 5001
-      primary_backend_server: "10.10.3.15"
-      secondary_backend_server: "10.10.3.20"
-      # SSL options per service
-      ssl_certbot: true
-      ssl_public_ca: false
-      ssl_self_signed: false
-
-    - service_host_name: wa-mpp-engage
-      service_host_url: wa-mpp-engage.mpd.ae
-      service_app_working_dir: "{{ deployment_base_dir }}/wa-mpp-engage.mpd.ae/Api/Stable_Running"
-      service_worker_working_dir: "{{ deployment_base_dir }}/wa-mpp-engage.mpd.ae/Worker/Stable_Running"
-      service_script_dir: "{{ service_script_base_dir }}/wa-mpp-engage.mpd.ae"
-      service_worker_required: true
-      service_worker_dll: wa_Worker.dll
-      service_app_api_required: true
-      service_app_dll: wa_WebApi.dll
-      service_listen: 0.0.0.0
-      service_port: 5002
-      primary_backend_server: "10.10.3.15"
-      secondary_backend_server: "10.10.3.20"
-      # SSL options per service
-      ssl_certbot: false
-      ssl_public_ca: false
-      ssl_self_signed: true
+        #    - service_host_name: mpp-common
+        #      service_host_url: mpp-common.mpd.ae
+        #      service_app_working_dir: "{{ deployment_base_dir }}/mpp-common.mpd.ae/Api/Stable_Running"
+        #      service_worker_working_dir: "{{ deployment_base_dir }}/mpp-common.mpd.ae/Worker/Stable_Running"
+        #      service_script_dir: "{{ service_script_base_dir }}/mpp-common.mpd.ae"
+        #      service_worker_required: false
+        #      service_worker_dll: []
+        #      service_app_api_required: true
+        #      service_app_dll: Com_WebApi.dll
+        #      service_listen: 0.0.0.0
+        #      service_port: 5002
+        #      primary_backend_server: "10.10.3.16"
+        #      secondary_backend_server: "10.10.3.22"
+        #      # SSL options per service
+        #      ssl_certbot: false
+        #      ssl_public_ca: false
+        #      ssl_self_signed: true
+        #
+        #    - service_host_name: mpp-console
+        #      service_host_url: mpp-console.mpd.ae
+        #      service_app_working_dir: "{{ deployment_base_dir }}/mpp-console.mpd.ae/Api/Stable_Running"
+        #      service_worker_working_dir: "{{ deployment_base_dir }}/mpp-console.mpd.ae/Worker/Stable_Running"
+        #      service_script_dir: "{{ service_script_base_dir }}/mpp-console.mpd.ae"
+        #      service_worker_required: false
+        #      service_worker_dll: []
+        #      service_app_api_required: true
+        #      service_app_dll: Con_WebApi.dll
+        #      service_listen: 0.0.0.0
+        #      service_port: 5003
+        #      primary_backend_server: "10.10.3.16"
+        #      secondary_backend_server: "10.10.3.22"
+        #      # SSL options per service
+        #      ssl_certbot: false
+        #      ssl_public_ca: false
+        #      ssl_self_signed: true
+        #
+        #    - service_host_name: mpp-reporting
+        #      service_host_url: mpp-reporting.mpd.ae
+        #      service_app_working_dir: "{{ deployment_base_dir }}/mpp-reporting.mpd.ae/Api/Stable_Running"
+        #      service_worker_working_dir: "{{ deployment_base_dir }}/mpp-reporting.mpd.ae/Worker/Stable_Running"
+        #      service_script_dir: "{{ service_script_base_dir }}/mpp-reporting.mpd.ae"
+        #      service_worker_required: false
+        #      service_worker_dll: []
+        #      service_app_api_required: true
+        #      service_app_dll: Report_WebApi.dll
+        #      service_listen: 0.0.0.0
+        #      service_port: 5004
+        #      primary_backend_server: "10.10.3.16"
+        #      secondary_backend_server: "10.10.3.22"
+        #      # SSL options per service
+        #      ssl_certbot: false
+        #      ssl_public_ca: false
+        #      ssl_self_signed: true
+        #
+        #  "10.10.3.15":
+        #    - service_host_name: mail-mpp-engage
+        #      service_host_url: mail-mpp-engage.mpd.ae
+        #      service_app_working_dir: "{{ deployment_base_dir }}/mail-mpp-engage.mpd.ae/Api/Stable_Running"
+        #      service_worker_working_dir: "{{ deployment_base_dir }}/mail-mpp-engage.mpd.ae/Worker/Stable_Running"
+        #      service_script_dir: "{{ service_script_base_dir }}/mail-mpp-engage.mpd.ae"
+        #      service_worker_required: true
+        #      service_worker_dll: Mail_Worker.dll
+        #      service_app_api_required: true
+        #      service_app_dll: Mail_WebApi.dll
+        #      service_listen: 0.0.0.0
+        #      service_port: 5001
+        #      primary_backend_server: "10.10.3.15"
+        #      secondary_backend_server: "10.10.3.20"
+        #      # SSL options per service
+        #      ssl_certbot: true
+        #      ssl_public_ca: false
+        #      ssl_self_signed: false
+        #
+        #    - service_host_name: wa-mpp-engage
+        #      service_host_url: wa-mpp-engage.mpd.ae
+        #      service_app_working_dir: "{{ deployment_base_dir }}/wa-mpp-engage.mpd.ae/Api/Stable_Running"
+        #      service_worker_working_dir: "{{ deployment_base_dir }}/wa-mpp-engage.mpd.ae/Worker/Stable_Running"
+        #      service_script_dir: "{{ service_script_base_dir }}/wa-mpp-engage.mpd.ae"
+        #      service_worker_required: true
+        #      service_worker_dll: wa_Worker.dll
+        #      service_app_api_required: true
+        #      service_app_dll: wa_WebApi.dll
+        #      service_listen: 0.0.0.0
+        #      service_port: 5002
+        #      primary_backend_server: "10.10.3.15"
+        #      secondary_backend_server: "10.10.3.20"
+        #      # SSL options per service
+        #      ssl_certbot: false
+        #      ssl_public_ca: false
+        #      ssl_self_signed: true
 
 #****************** The one with Python and Nginx *****************#
 
